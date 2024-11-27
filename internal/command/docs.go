@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -51,6 +52,7 @@ func (c *CommandDocs) Run(args []string) int {
 	cmdLogger.Printf("Using binary at: %s", binaryPath)
 
 	// First pass: scan for documentation paths
+	// Find documentation paths
 	docPaths, err := findDocumentationPaths(binaryPath)
 	if err != nil {
 		cmdLogger.Printf("Error scanning binary: %s", err)
@@ -62,12 +64,86 @@ func (c *CommandDocs) Run(args []string) int {
 		return 1
 	}
 
-	// Print found paths in verbose mode
+	// Print found paths and their content
 	for _, path := range docPaths {
 		cmdLogger.Printf("Found documentation path: %s", path)
+		content, err := findDocumentationContent(binaryPath, path)
+		if err != nil {
+			cmdLogger.Printf("Error reading content: %s", err)
+			continue
+		}
+		fmt.Printf("\n=== Content of %s ===\n", path)
+		fmt.Println(content)
+		fmt.Println("=== End of content ===\n")
 	}
 
 	return 0
+}
+
+func findDocumentationContent(binaryPath string, path string) (string, error) {
+	file, err := os.Open(binaryPath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	buffer := make([]byte, 8192)
+	offset := int64(0)
+
+	cmdLogger.Printf("Searching for content of: %s", path)
+
+	var content bytes.Buffer
+	foundStart := false
+	for {
+		n, err := file.ReadAt(buffer, offset)
+		if err != nil && err != io.EOF {
+			return "", err
+		}
+		if n == 0 {
+			break
+		}
+
+		// Look for the path
+		if !foundStart {
+			idx := bytes.Index(buffer[:n], []byte(path))
+			if idx != -1 {
+				cmdLogger.Printf("Found start of file at offset: %d", offset+int64(idx))
+				foundStart = true
+
+				// Skip the path itself
+				startIdx := idx + len(path)
+
+				// Look for the content start (usually after a newline)
+				for i := startIdx; i < n; i++ {
+					if buffer[i] == '\n' {
+						startIdx = i + 1
+						break
+					}
+				}
+
+				content.Write(buffer[startIdx:n])
+			}
+		} else {
+			// Look for end of file markers
+			endIdx := bytes.Index(buffer[:n], []byte("---"))
+			if endIdx != -1 {
+				content.Write(buffer[:endIdx])
+				break
+			}
+			content.Write(buffer[:n])
+		}
+
+		offset += int64(n - 100) // Overlap to avoid missing content at boundaries
+		if err == io.EOF {
+			break
+		}
+	}
+
+	if !foundStart {
+		return "", fmt.Errorf("content not found for path: %s", path)
+	}
+
+	return content.String(), nil
 }
 
 func findDocumentationPaths(binaryPath string) ([]string, error) {
