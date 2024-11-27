@@ -1,30 +1,8 @@
 package command
 
-/*
-Function Overview:
-1. Command Interface Functions:
-   - Help() - Returns help text for the command
-   - Synopsis() - Returns a brief description
-   - Run(args []string) - Main entry point
-
-2. Provider Detection Functions:
-   - getProviderFromLockFile(providerName string) - Reads provider info from lock file
-   - constructBinaryPath(details *ProviderDetails) - Builds path to provider binary
-
-3. Binary Analysis Functions:
-   - readProviderSchema(binaryPath string) - Reads schema from provider binary
-   - findResources(data []byte, marker []byte) - Finds resource definitions
-   - isValidResourceName(name string) - Validates resource names
-
-4. Helper Functions:
-   - listDirectoryContents(dirPath string) - Debug helper to list directory contents
-*/
-
 import (
-	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -33,40 +11,24 @@ import (
 	"strings"
 )
 
-// ----------------------------------------------------------------------------
-// Types and Constants
-// ----------------------------------------------------------------------------
-
 var cmdLogger = log.New(os.Stdout, "CommandDocsLog: ", 0)
 
 type CommandDocs struct{}
-
-type ProviderDetails struct {
-	Source  string
-	Version string
-}
-
-// ----------------------------------------------------------------------------
-// Command Interface Implementation
-// ----------------------------------------------------------------------------
 
 func (c *CommandDocs) Help() string {
 	return `
 Usage: terraform docs <provider> [options] [resource_name]
 
-Lists documentation for provider resources and data sources.
+Lists documentation from provider binary.
 
 Options:
   -l    List all available resources and data sources
-
-Examples:
-  terraform docs random -l         # Lists all random provider resources
-  terraform docs random random_id  # Shows documentation for random_id resource
+  -v    Verbose mode to show file paths
 `
 }
 
 func (c *CommandDocs) Synopsis() string {
-	return "Shows provider documentation for resources and data sources"
+	return "Extracts documentation from provider binary"
 }
 
 func (c *CommandDocs) Run(args []string) int {
@@ -76,7 +38,7 @@ func (c *CommandDocs) Run(args []string) int {
 	}
 
 	providerName := args[0]
-	cmdLogger.Printf("Provider name: %s", providerName)
+	cmdLogger.Printf("Looking for documentation in provider: %s", providerName)
 
 	// Get provider details from lock file
 	providerDetails, err := getProviderFromLockFile(providerName)
@@ -85,200 +47,217 @@ func (c *CommandDocs) Run(args []string) int {
 		return 1
 	}
 
-	// Construct binary path
 	binaryPath := constructBinaryPath(providerDetails)
-	cmdLogger.Printf("Looking for binary at: %s", binaryPath)
+	cmdLogger.Printf("Using binary at: %s", binaryPath)
 
-	if _, err := os.Stat(binaryPath); err != nil {
-		cmdLogger.Printf("Error accessing binary: %s", err)
-		return 1
-	}
-
-	cmdLogger.Printf("Found provider binary at: %s", binaryPath)
-
-	// Handle different command modes
-	if len(args) > 1 {
-		if args[1] == "-l" {
-			cmdLogger.Printf("List mode enabled - attempting to list resources")
-			return readProviderSchema(binaryPath, providerName)
-		} else {
-			cmdLogger.Printf("Documentation mode - attempting to show resource docs")
-			return showResourceDocs(binaryPath, args[1], providerName)
-		}
-	}
-
-	fmt.Println("Please specify either -l to list resources or provide a resource name")
-	return 1
-}
-
-// ----------------------------------------------------------------------------
-// Provider Detection Functions
-// ----------------------------------------------------------------------------
-
-func getProviderFromLockFile(providerName string) (*ProviderDetails, error) {
-	cmdLogger.Printf("Reading lock file for provider: %s", providerName)
-
-	content, err := ioutil.ReadFile(".terraform.lock.hcl")
+	// First pass: scan for documentation paths
+	docPaths, err := findDocumentationPaths(binaryPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read lock file: %w", err)
-	}
-
-	details := &ProviderDetails{}
-
-	// Look for provider block
-	providerRegex := regexp.MustCompile(`provider "([^"]+/[^"]+/` + providerName + `)" {[^}]*version\s*=\s*"([^"]+)"`)
-	matches := providerRegex.FindStringSubmatch(string(content))
-
-	if len(matches) < 3 {
-		return nil, fmt.Errorf("provider %s not found in lock file", providerName)
-	}
-
-	details.Source = matches[1]
-	details.Version = matches[2]
-
-	cmdLogger.Printf("Found provider: %s version %s", details.Source, details.Version)
-	return details, nil
-}
-
-func constructBinaryPath(details *ProviderDetails) string {
-	// Determine OS and architecture
-	os := runtime.GOOS
-	arch := runtime.GOARCH
-
-	// Construct the path
-	return filepath.Join(
-		".terraform",
-		"providers",
-		details.Source,
-		details.Version,
-		fmt.Sprintf("%s_%s", os, arch),
-		fmt.Sprintf("terraform-provider-%s", strings.Split(details.Source, "/")[2]),
-	)
-}
-
-// ----------------------------------------------------------------------------
-// Binary Analysis Functions
-// ----------------------------------------------------------------------------
-
-func readProviderSchema(binaryPath, providerName string) int {
-	cmdLogger.Printf("Attempting to read schema from binary: %s", binaryPath)
-
-	// Open the binary file
-	f, err := os.Open(binaryPath)
-	if err != nil {
-		cmdLogger.Printf("Error opening binary: %s", err)
-		return 1
-	}
-	defer f.Close()
-
-	// Read the first few bytes to determine the header
-	header := make([]byte, 8)
-	if _, err := f.Read(header); err != nil {
-		cmdLogger.Printf("Error reading header: %s", err)
+		cmdLogger.Printf("Error scanning binary: %s", err)
 		return 1
 	}
 
-	cmdLogger.Printf("Binary header: %x", header)
+	if len(docPaths) == 0 {
+		cmdLogger.Printf("No documentation paths found in binary")
+		return 1
+	}
 
-	// Try to find the schema section
-	buffer := make([]byte, 1024*1024) // 1MB buffer
-	for {
-		n, err := f.Read(buffer)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			cmdLogger.Printf("Error reading binary: %s", err)
-			return 1
-		}
-
-		// Look for schema-related markers in the binary
-		resourceMarker := []byte("Resource")
-		dataSourceMarker := []byte("DataSource")
-
-		// Search for resource and data source definitions
-		data := buffer[:n]
-		resources := findResources(data, resourceMarker)
-		dataSources := findResources(data, dataSourceMarker)
-
-		// Print found resources
-		for _, resource := range resources {
-			fmt.Printf("* %s_%s\n", strings.ToLower(providerName), resource)
-		}
-		for _, dataSource := range dataSources {
-			fmt.Printf("* data_%s_%s\n", strings.ToLower(providerName), dataSource)
-		}
+	// Print found paths in verbose mode
+	for _, path := range docPaths {
+		cmdLogger.Printf("Found documentation path: %s", path)
 	}
 
 	return 0
 }
 
-func findResources(data []byte, marker []byte) []string {
-	var resources []string
-	offset := 0
+func findDocumentationPaths(binaryPath string) ([]string, error) {
+	file, err := os.Open(binaryPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	// All possible documentation paths and extensions
+	pathPatterns := []struct {
+		path       string
+		extensions []string
+	}{
+		// Modern structure
+		{
+			path:       "docs/index",
+			extensions: []string{".md"},
+		},
+		{
+			path:       "docs/guides/",
+			extensions: []string{".md"},
+		},
+		{
+			path:       "docs/resources/",
+			extensions: []string{".md"},
+		},
+		{
+			path:       "docs/data-sources/",
+			extensions: []string{".md"},
+		},
+		{
+			path:       "docs/functions/",
+			extensions: []string{".md"},
+		},
+		{
+			path:       "docs/ephemeral-resources/",
+			extensions: []string{".md"},
+		},
+		// Legacy structure
+		{
+			path:       "website/docs/index",
+			extensions: []string{".html.markdown", ".html.md"},
+		},
+		{
+			path:       "website/docs/guides/",
+			extensions: []string{".html.markdown", ".html.md"},
+		},
+		{
+			path:       "website/docs/r/",
+			extensions: []string{".html.markdown", ".html.md"},
+		},
+		{
+			path:       "website/docs/d/",
+			extensions: []string{".html.markdown", ".html.md"},
+		},
+		{
+			path:       "website/docs/",
+			extensions: []string{".html.markdown", ".html.md"},
+		},
+		{
+			path:       "website/",
+			extensions: []string{".html.markdown", ".html.md"},
+		},
+		// Additional paths
+		{
+			path:       "doc/",
+			extensions: []string{".md", ".html.markdown", ".html.md"},
+		},
+	}
+
+	buffer := make([]byte, 8192) // Increased buffer size
+	var foundPaths []string
+	offset := int64(0)
+
+	cmdLogger.Printf("Scanning binary for documentation paths...")
 
 	for {
-		// Find the marker
-		idx := bytes.Index(data[offset:], marker)
-		if idx == -1 {
+		n, err := file.ReadAt(buffer, offset)
+		if err != nil && err != io.EOF {
+			return nil, err
+		}
+		if n == 0 {
 			break
 		}
 
-		// Move past the marker
-		offset += idx + len(marker)
+		// Convert buffer to string for searching
+		content := string(buffer[:n])
 
-		// Try to read the resource name
-		end := bytes.IndexByte(data[offset:], 0)
-		if end == -1 {
+		// Look for each path pattern and its extensions
+		for _, pattern := range pathPatterns {
+			if idx := strings.Index(content, pattern.path); idx != -1 {
+				for _, ext := range pattern.extensions {
+					// Try to find a complete path
+					startIdx := idx
+					endIdx := strings.Index(content[idx:], ext)
+					if endIdx != -1 {
+						path := content[startIdx : startIdx+endIdx+len(ext)]
+
+						// Clean the path
+						path = strings.TrimSpace(path)
+						// Remove any binary garbage before the actual path
+						if lastSlash := strings.LastIndex(path, "/"); lastSlash != -1 {
+							pathStart := strings.LastIndex(path[:lastSlash], "docs/")
+							if pathStart == -1 {
+								pathStart = strings.LastIndex(path[:lastSlash], "doc/")
+							}
+							if pathStart != -1 {
+								path = path[pathStart:]
+							}
+						}
+
+						// Validate path
+						if isValidPath(path) && !contains(foundPaths, path) {
+							cmdLogger.Printf("Found path: %s", path)
+							foundPaths = append(foundPaths, path)
+						}
+					}
+				}
+			}
+		}
+
+		offset += int64(n - 100) // Overlap by 100 bytes to avoid missing matches at buffer boundaries
+		if err == io.EOF {
 			break
 		}
-
-		name := string(data[offset : offset+end])
-		if isValidResourceName(name) {
-			resources = append(resources, name)
-		}
-
-		offset += end + 1
 	}
 
-	return resources
+	return foundPaths, nil
 }
 
-func isValidResourceName(name string) bool {
-	// Add validation logic for resource names
-	return len(name) > 0 && !strings.Contains(name, " ")
+func isValidPath(path string) bool {
+	// Check if path starts with expected prefixes
+	validPrefixes := []string{
+		"docs/",
+		"doc/",
+		"website/docs/",
+	}
+
+	for _, prefix := range validPrefixes {
+		if strings.HasPrefix(path, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
-func showResourceDocs(binaryPath, resourceName, providerName string) int {
-	cmdLogger.Printf("Attempting to read documentation for resource: %s", resourceName)
-	// This function needs to be implemented based on how we want to extract
-	// documentation from the binary
-	return 1
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
 
-// ----------------------------------------------------------------------------
-// Helper Functions
-// ----------------------------------------------------------------------------
-
-func listDirectoryContents(dirPath string) {
-	cmdLogger.Printf("Directory contents for: %s", dirPath)
-	err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			cmdLogger.Printf("Error accessing path %s: %v", path, err)
-			return err
-		}
-		rel, err := filepath.Rel(dirPath, path)
-		if err != nil {
-			rel = path
-		}
-		if info.IsDir() {
-			cmdLogger.Printf("    DIR: %s", rel)
-		} else {
-			cmdLogger.Printf("    FILE: %s (%d bytes)", rel, info.Size())
-		}
-		return nil
-	})
+func getProviderFromLockFile(providerName string) (*ProviderDetails, error) {
+	content, err := os.ReadFile(".terraform.lock.hcl")
 	if err != nil {
-		cmdLogger.Printf("Error walking directory: %v", err)
+		return nil, fmt.Errorf("failed to read lock file: %w", err)
 	}
+
+	providerRegex := regexp.MustCompile(
+		fmt.Sprintf(`provider "([^"]+/%s)" {[^}]*version\s*=\s*"([^"]+)"`,
+			providerName))
+
+	matches := providerRegex.FindStringSubmatch(string(content))
+	if len(matches) < 3 {
+		return nil, fmt.Errorf("provider %s not found in lock file", providerName)
+	}
+
+	return &ProviderDetails{
+		Source:  matches[1],
+		Version: matches[2],
+	}, nil
+}
+
+type ProviderDetails struct {
+	Source  string
+	Version string
+}
+
+func constructBinaryPath(details *ProviderDetails) string {
+	return filepath.Join(
+		".terraform",
+		"providers",
+		details.Source,
+		details.Version,
+		fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH),
+		fmt.Sprintf("terraform-provider-%s",
+			strings.Split(details.Source, "/")[2]),
+	)
 }
