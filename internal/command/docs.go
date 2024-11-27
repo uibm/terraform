@@ -1,35 +1,53 @@
 package command
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 )
 
 var cmdLogger = log.New(os.Stdout, "CommandDocsLog: ", 0)
 
+// DocumentationPaths defines the structure and extensions for provider documentation
+var documentationPaths = map[string][]string{
+	"docs/":                     {".md"},
+	"docs/guides/":              {".md"},
+	"docs/resources/":           {".md"},
+	"docs/data-sources/":        {".md"},
+	"docs/functions/":           {".md"},
+	"docs/ephemeral-resources/": {".md"},
+	"website/docs/":             {".html.markdown", ".html.md"},
+	"website/docs/r/":           {".html.markdown", ".html.md"},
+	"website/docs/d/":           {".html.markdown", ".html.md"},
+}
+
 type CommandDocs struct{}
+
+type ProviderDetails struct {
+	Source  string
+	Version string
+}
 
 func (c *CommandDocs) Help() string {
 	return `
 Usage: terraform docs <provider> [options] [resource_name]
 
-Lists documentation from provider binary.
+Downloads and shows provider documentation.
 
 Options:
   -l    List all available resources and data sources
-  -v    Verbose mode to show file paths
+  -v    Show verbose logging
 `
 }
 
 func (c *CommandDocs) Synopsis() string {
-	return "Extracts documentation from provider binary"
+	return "Downloads and shows provider documentation"
 }
 
 func (c *CommandDocs) Run(args []string) int {
@@ -39,7 +57,7 @@ func (c *CommandDocs) Run(args []string) int {
 	}
 
 	providerName := args[0]
-	cmdLogger.Printf("Looking for documentation in provider: %s", providerName)
+	cmdLogger.Printf("Fetching documentation for provider: %s", providerName)
 
 	// Get provider details from lock file
 	providerDetails, err := getProviderFromLockFile(providerName)
@@ -48,256 +66,43 @@ func (c *CommandDocs) Run(args []string) int {
 		return 1
 	}
 
-	binaryPath := constructBinaryPath(providerDetails)
-	cmdLogger.Printf("Using binary at: %s", binaryPath)
-
-	// First pass: scan for documentation paths
-	// Find documentation paths
-	docPaths, err := findDocumentationPaths(binaryPath)
-	if err != nil {
-		cmdLogger.Printf("Error scanning binary: %s", err)
+	// Create docs directory under .terraform
+	docsDir := filepath.Join(".terraform", "docs", providerName)
+	if err := ensureDirectory(docsDir); err != nil {
+		cmdLogger.Printf("Error creating docs directory: %s", err)
 		return 1
 	}
 
-	if len(docPaths) == 0 {
-		cmdLogger.Printf("No documentation paths found in binary")
-		return 1
-	}
-
-	// Print found paths and their content
-	for _, path := range docPaths {
-		cmdLogger.Printf("Found documentation path: %s", path)
-		content, err := findDocumentationContent(binaryPath, path)
+	// Get repository URL
+	repoURL := getProviderRepoURL(providerDetails)
+	if repoURL == "" {
+		// Try registry API as fallback
+		source, err := getProviderSourceFromRegistry(providerName)
 		if err != nil {
-			cmdLogger.Printf("Error reading content: %s", err)
-			continue
+			cmdLogger.Printf("Could not determine repository URL for provider: %s", err)
+			return 1
 		}
-		fmt.Printf("\n=== Content of %s ===\n", path)
-		fmt.Println(content)
-		fmt.Println("=== End of content ===\n")
+		repoURL = source
+	}
+
+	cmdLogger.Printf("Using repository URL: %s", repoURL)
+
+	// Download documentation
+	if err := downloadProviderDocs(repoURL, docsDir, providerName); err != nil {
+		cmdLogger.Printf("Error downloading documentation: %s", err)
+		return 1
+	}
+
+	// Handle command options
+	if len(args) > 1 {
+		if args[1] == "-l" {
+			return listResources(docsDir)
+		}
+		// Show specific resource documentation
+		return showResourceDoc(docsDir, args[1])
 	}
 
 	return 0
-}
-
-func findDocumentationContent(binaryPath string, path string) (string, error) {
-	file, err := os.Open(binaryPath)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	buffer := make([]byte, 8192)
-	offset := int64(0)
-
-	cmdLogger.Printf("Searching for content of: %s", path)
-
-	var content bytes.Buffer
-	foundStart := false
-	for {
-		n, err := file.ReadAt(buffer, offset)
-		if err != nil && err != io.EOF {
-			return "", err
-		}
-		if n == 0 {
-			break
-		}
-
-		// Look for the path
-		if !foundStart {
-			idx := bytes.Index(buffer[:n], []byte(path))
-			if idx != -1 {
-				cmdLogger.Printf("Found start of file at offset: %d", offset+int64(idx))
-				foundStart = true
-
-				// Skip the path itself
-				startIdx := idx + len(path)
-
-				// Look for the content start (usually after a newline)
-				for i := startIdx; i < n; i++ {
-					if buffer[i] == '\n' {
-						startIdx = i + 1
-						break
-					}
-				}
-
-				content.Write(buffer[startIdx:n])
-			}
-		} else {
-			// Look for end of file markers
-			endIdx := bytes.Index(buffer[:n], []byte("---"))
-			if endIdx != -1 {
-				content.Write(buffer[:endIdx])
-				break
-			}
-			content.Write(buffer[:n])
-		}
-
-		offset += int64(n - 100) // Overlap to avoid missing content at boundaries
-		if err == io.EOF {
-			break
-		}
-	}
-
-	if !foundStart {
-		return "", fmt.Errorf("content not found for path: %s", path)
-	}
-
-	return content.String(), nil
-}
-
-func findDocumentationPaths(binaryPath string) ([]string, error) {
-	file, err := os.Open(binaryPath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	// All possible documentation paths and extensions
-	pathPatterns := []struct {
-		path       string
-		extensions []string
-	}{
-		// Modern structure
-		{
-			path:       "docs/index",
-			extensions: []string{".md"},
-		},
-		{
-			path:       "docs/guides/",
-			extensions: []string{".md"},
-		},
-		{
-			path:       "docs/resources/",
-			extensions: []string{".md"},
-		},
-		{
-			path:       "docs/data-sources/",
-			extensions: []string{".md"},
-		},
-		{
-			path:       "docs/functions/",
-			extensions: []string{".md"},
-		},
-		{
-			path:       "docs/ephemeral-resources/",
-			extensions: []string{".md"},
-		},
-		// Legacy structure
-		{
-			path:       "website/docs/index",
-			extensions: []string{".html.markdown", ".html.md"},
-		},
-		{
-			path:       "website/docs/guides/",
-			extensions: []string{".html.markdown", ".html.md"},
-		},
-		{
-			path:       "website/docs/r/",
-			extensions: []string{".html.markdown", ".html.md"},
-		},
-		{
-			path:       "website/docs/d/",
-			extensions: []string{".html.markdown", ".html.md"},
-		},
-		{
-			path:       "website/docs/",
-			extensions: []string{".html.markdown", ".html.md"},
-		},
-		{
-			path:       "website/",
-			extensions: []string{".html.markdown", ".html.md"},
-		},
-		// Additional paths
-		{
-			path:       "doc/",
-			extensions: []string{".md", ".html.markdown", ".html.md"},
-		},
-	}
-
-	buffer := make([]byte, 8192) // Increased buffer size
-	var foundPaths []string
-	offset := int64(0)
-
-	cmdLogger.Printf("Scanning binary for documentation paths...")
-
-	for {
-		n, err := file.ReadAt(buffer, offset)
-		if err != nil && err != io.EOF {
-			return nil, err
-		}
-		if n == 0 {
-			break
-		}
-
-		// Convert buffer to string for searching
-		content := string(buffer[:n])
-
-		// Look for each path pattern and its extensions
-		for _, pattern := range pathPatterns {
-			if idx := strings.Index(content, pattern.path); idx != -1 {
-				for _, ext := range pattern.extensions {
-					// Try to find a complete path
-					startIdx := idx
-					endIdx := strings.Index(content[idx:], ext)
-					if endIdx != -1 {
-						path := content[startIdx : startIdx+endIdx+len(ext)]
-
-						// Clean the path
-						path = strings.TrimSpace(path)
-						// Remove any binary garbage before the actual path
-						if lastSlash := strings.LastIndex(path, "/"); lastSlash != -1 {
-							pathStart := strings.LastIndex(path[:lastSlash], "docs/")
-							if pathStart == -1 {
-								pathStart = strings.LastIndex(path[:lastSlash], "doc/")
-							}
-							if pathStart != -1 {
-								path = path[pathStart:]
-							}
-						}
-
-						// Validate path
-						if isValidPath(path) && !contains(foundPaths, path) {
-							cmdLogger.Printf("Found path: %s", path)
-							foundPaths = append(foundPaths, path)
-						}
-					}
-				}
-			}
-		}
-
-		offset += int64(n - 100) // Overlap by 100 bytes to avoid missing matches at buffer boundaries
-		if err == io.EOF {
-			break
-		}
-	}
-
-	return foundPaths, nil
-}
-
-func isValidPath(path string) bool {
-	// Check if path starts with expected prefixes
-	validPrefixes := []string{
-		"docs/",
-		"doc/",
-		"website/docs/",
-	}
-
-	for _, prefix := range validPrefixes {
-		if strings.HasPrefix(path, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
 }
 
 func getProviderFromLockFile(providerName string) (*ProviderDetails, error) {
@@ -321,19 +126,157 @@ func getProviderFromLockFile(providerName string) (*ProviderDetails, error) {
 	}, nil
 }
 
-type ProviderDetails struct {
-	Source  string
-	Version string
+func getProviderRepoURL(providerDetails *ProviderDetails) string {
+	parts := strings.Split(providerDetails.Source, "/")
+	if len(parts) != 3 {
+		cmdLogger.Printf("Unexpected provider source format: %s", providerDetails.Source)
+		return ""
+	}
+
+	organization := parts[1]
+	providerName := parts[2]
+
+	if parts[0] == "registry.terraform.io" {
+		// Special case for IBM
+		if organization == "ibm" || providerName == "ibm" {
+			return fmt.Sprintf("https://raw.githubusercontent.com/IBM-Cloud/terraform-provider-%s/main/", providerName)
+		}
+
+		return fmt.Sprintf("https://raw.githubusercontent.com/%s/terraform-provider-%s/main/",
+			organization, providerName)
+	}
+
+	return ""
 }
 
-func constructBinaryPath(details *ProviderDetails) string {
-	return filepath.Join(
-		".terraform",
-		"providers",
-		details.Source,
-		details.Version,
-		fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH),
-		fmt.Sprintf("terraform-provider-%s",
-			strings.Split(details.Source, "/")[2]),
-	)
+func getProviderSourceFromRegistry(providerName string) (string, error) {
+	url := fmt.Sprintf("https://registry.terraform.io/v1/providers/%s", providerName)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("registry API returned status: %d", resp.StatusCode)
+	}
+
+	var result struct {
+		Source string `json:"source"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+
+	return result.Source, nil
+}
+
+func downloadProviderDocs(repoURL, docsDir, providerName string) error {
+	for dirPath, extensions := range documentationPaths {
+		targetDir := filepath.Join(docsDir, dirPath)
+		if err := ensureDirectory(targetDir); err != nil {
+			return err
+		}
+
+		// Try to download index file first
+		for _, ext := range extensions {
+			indexURL := repoURL + dirPath + "index" + ext
+			indexPath := filepath.Join(targetDir, "index"+ext)
+			err := downloadFile(indexURL, indexPath)
+			if err == nil {
+				cmdLogger.Printf("Downloaded index file: %s", indexPath)
+			}
+		}
+
+		// Try to list directory contents (this would need GitHub API integration)
+		if strings.Contains(dirPath, "resources") || strings.Contains(dirPath, "r/") {
+			// For now, try to download based on common patterns
+			for _, ext := range extensions {
+				listURL := repoURL + dirPath
+				// This is where you'd integrate with GitHub API to get actual file listing
+				cmdLogger.Printf("Checking directory: %s", listURL)
+			}
+		}
+	}
+
+	return nil
+}
+
+func downloadFile(url, outputPath string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	out, err := os.Create(outputPath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
+func ensureDirectory(path string) error {
+	return os.MkdirAll(path, os.ModePerm)
+}
+
+func listResources(docsDir string) int {
+	var resources []string
+
+	// Check both modern and legacy paths
+	resourcePaths := []string{
+		filepath.Join(docsDir, "docs", "resources"),
+		filepath.Join(docsDir, "website", "docs", "r"),
+	}
+
+	for _, path := range resourcePaths {
+		files, err := os.ReadDir(path)
+		if err != nil {
+			continue
+		}
+
+		for _, file := range files {
+			if !file.IsDir() {
+				name := strings.TrimSuffix(file.Name(), filepath.Ext(file.Name()))
+				name = strings.TrimSuffix(name, ".html")
+				resources = append(resources, name)
+			}
+		}
+	}
+
+	// Sort and print resources
+	for _, resource := range resources {
+		fmt.Printf("* %s\n", resource)
+	}
+
+	return 0
+}
+
+func showResourceDoc(docsDir, resourceName string) int {
+	// Try both modern and legacy paths
+	paths := []string{
+		filepath.Join(docsDir, "docs", "resources", resourceName+".md"),
+		filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.md"),
+		filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.markdown"),
+	}
+
+	for _, path := range paths {
+		content, err := os.ReadFile(path)
+		if err == nil {
+			fmt.Println(string(content))
+			return 0
+		}
+	}
+
+	fmt.Printf("Documentation not found for resource: %s\n", resourceName)
+	return 1
 }
