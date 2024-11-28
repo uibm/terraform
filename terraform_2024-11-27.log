@@ -6277,3 +6277,254 @@
 2024-11-27T21:29:20.884+0530 [DEBUG] Explicit provider installation configuration is set
 2024-11-27T21:29:20.884+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
 2024-11-27T21:29:20.884+0530 [INFO]  CLI command args: []string{"docs", "ibm", "-l"}
+2024-11-27T21:47:01.646+0530 [INFO]  Terraform version: 1.11.0 dev
+2024-11-27T21:47:01.647+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.70.0
+2024-11-27T21:47:01.647+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.23.0
+2024-11-27T21:47:01.647+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-27T21:47:01.647+0530 [DEBUG] using github.com/zclconf/go-cty v1.15.1-0.20241111215639-63279be090d7
+2024-11-27T21:47:01.647+0530 [INFO]  Go runtime version: go1.23.3
+2024-11-27T21:47:01.647+0530 [INFO]  CLI args: []string{"./terraform", "docs", "ibm", "-l"}
+2024-11-27T21:47:01.647+0530 [TRACE] Stdout is a terminal of width 142
+2024-11-27T21:47:01.647+0530 [TRACE] Stderr is a terminal of width 142
+2024-11-27T21:47:01.647+0530 [TRACE] Stdin is a terminal
+2024-11-27T21:47:01.647+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-27T21:47:01.647+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-27T21:47:01.648+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-27T21:47:01.648+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-27T21:47:01.649+0530 [INFO]  CLI command args: []string{"docs", "ibm", "-l"}
+2024-11-27T21:56:05.764+0530 [INFO]  Terraform version: 1.11.0 dev
+2024-11-27T21:56:05.765+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.70.0
+2024-11-27T21:56:05.765+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.23.0
+2024-11-27T21:56:05.765+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-27T21:56:05.765+0530 [DEBUG] using github.com/zclconf/go-cty v1.15.1-0.20241111215639-63279be090d7
+2024-11-27T21:56:05.765+0530 [INFO]  Go runtime version: go1.23.3
+2024-11-27T21:56:05.765+0530 [INFO]  CLI args: []string{"./terraform", "docs", "ibm", "-l"}
+2024-11-27T21:56:05.765+0530 [TRACE] Stdout is a terminal of width 142
+2024-11-27T21:56:05.765+0530 [TRACE] Stderr is a terminal of width 142
+2024-11-27T21:56:05.765+0530 [TRACE] Stdin is a terminal
+2024-11-27T21:56:05.765+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-27T21:56:05.765+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-27T21:56:05.766+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-27T21:56:05.766+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-27T21:56:05.767+0530 [INFO]  CLI command args: []string{"docs", "ibm", "-l"}
+2024-11-27T21:56:36.121+0530 [INFO]  Terraform version: 1.11.0 dev
+2024-11-27T21:56:36.121+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.70.0
+2024-11-27T21:56:36.121+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.23.0
+2024-11-27T21:56:36.121+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-27T21:56:36.121+0530 [DEBUG] using github.com/zclconf/go-cty v1.15.1-0.20241111215639-63279be090d7
+2024-11-27T21:56:36.121+0530 [INFO]  Go runtime version: go1.23.3
+2024-11-27T21:56:36.121+0530 [INFO]  CLI args: []string{"./terraform", "docs", "ibm", "-l"}
+2024-11-27T21:56:36.121+0530 [TRACE] Stdout is a terminal of width 142
+2024-11-27T21:56:36.121+0530 [TRACE] Stderr is a terminal of width 142
+2024-11-27T21:56:36.121+0530 [TRACE] Stdin is a terminal
+2024-11-27T21:56:36.121+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-27T21:56:36.121+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-27T21:56:36.121+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-27T21:56:36.121+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-27T21:56:36.122+0530 [INFO]  CLI command args: []string{"docs", "ibm", "-l"}
+2024-11-27T21:57:31.962+0530 [INFO]  Terraform version: 1.11.0 dev
+2024-11-27T21:57:31.963+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.70.0
+2024-11-27T21:57:31.963+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.23.0
+2024-11-27T21:57:31.963+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-27T21:57:31.963+0530 [DEBUG] using github.com/zclconf/go-cty v1.15.1-0.20241111215639-63279be090d7
+2024-11-27T21:57:31.963+0530 [INFO]  Go runtime version: go1.23.3
+2024-11-27T21:57:31.963+0530 [INFO]  CLI args: []string{"./terraform", "docs", "ibm", "-l"}
+2024-11-27T21:57:31.963+0530 [TRACE] Stdout is a terminal of width 142
+2024-11-27T21:57:31.963+0530 [TRACE] Stderr is a terminal of width 142
+2024-11-27T21:57:31.963+0530 [TRACE] Stdin is a terminal
+2024-11-27T21:57:31.963+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-27T21:57:31.963+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-27T21:57:31.963+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-27T21:57:31.963+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-27T21:57:31.963+0530 [INFO]  CLI command args: []string{"docs", "ibm", "-l"}
+2024-11-27T22:21:23.273+0530 [INFO]  Terraform version: 1.11.0 dev
+2024-11-27T22:21:23.273+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.70.0
+2024-11-27T22:21:23.273+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.23.0
+2024-11-27T22:21:23.273+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-27T22:21:23.273+0530 [DEBUG] using github.com/zclconf/go-cty v1.15.1-0.20241111215639-63279be090d7
+2024-11-27T22:21:23.273+0530 [INFO]  Go runtime version: go1.23.3
+2024-11-27T22:21:23.273+0530 [INFO]  CLI args: []string{"./terraform", "docs", "ibm", "-l"}
+2024-11-27T22:21:23.273+0530 [TRACE] Stdout is a terminal of width 142
+2024-11-27T22:21:23.273+0530 [TRACE] Stderr is a terminal of width 142
+2024-11-27T22:21:23.273+0530 [TRACE] Stdin is a terminal
+2024-11-27T22:21:23.273+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-27T22:21:23.273+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-27T22:21:23.274+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-27T22:21:23.274+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-27T22:21:23.275+0530 [INFO]  CLI command args: []string{"docs", "ibm", "-l"}
+2024-11-27T22:21:49.036+0530 [INFO]  Terraform version: 1.11.0 dev
+2024-11-27T22:21:49.037+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.70.0
+2024-11-27T22:21:49.037+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.23.0
+2024-11-27T22:21:49.037+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-27T22:21:49.037+0530 [DEBUG] using github.com/zclconf/go-cty v1.15.1-0.20241111215639-63279be090d7
+2024-11-27T22:21:49.037+0530 [INFO]  Go runtime version: go1.23.3
+2024-11-27T22:21:49.037+0530 [INFO]  CLI args: []string{"./terraform", "docs", "ibm", "-l"}
+2024-11-27T22:21:49.037+0530 [TRACE] Stdout is a terminal of width 142
+2024-11-27T22:21:49.037+0530 [TRACE] Stderr is a terminal of width 142
+2024-11-27T22:21:49.037+0530 [TRACE] Stdin is a terminal
+2024-11-27T22:21:49.037+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-27T22:21:49.037+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-27T22:21:49.038+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-27T22:21:49.038+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-27T22:21:49.038+0530 [INFO]  CLI command args: []string{"docs", "ibm", "-l"}
+2024-11-27T22:22:57.994+0530 [INFO]  Terraform version: 1.7.5
+2024-11-27T22:22:57.994+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.41.0
+2024-11-27T22:22:57.994+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.19.1
+2024-11-27T22:22:57.994+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-27T22:22:57.994+0530 [DEBUG] using github.com/zclconf/go-cty v1.14.1
+2024-11-27T22:22:57.994+0530 [INFO]  Go runtime version: go1.21.8
+2024-11-27T22:22:57.994+0530 [INFO]  CLI args: []string{"terraform", "init"}
+2024-11-27T22:22:57.994+0530 [TRACE] Stdout is a terminal of width 142
+2024-11-27T22:22:57.994+0530 [TRACE] Stderr is a terminal of width 142
+2024-11-27T22:22:57.994+0530 [TRACE] Stdin is a terminal
+2024-11-27T22:22:57.994+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-27T22:22:57.994+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-27T22:22:57.995+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-27T22:22:57.995+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-27T22:22:57.996+0530 [INFO]  CLI command args: []string{"init"}
+2024-11-27T22:22:58.003+0530 [TRACE] Meta.Backend: no config given or present on disk, so returning nil config
+2024-11-27T22:22:58.003+0530 [TRACE] Meta.Backend: backend has not previously been initialized in this working directory
+2024-11-27T22:22:58.003+0530 [DEBUG] New state was assigned lineage "7ec425e5-fe0b-5cc2-2098-9e7d9657f82e"
+2024-11-27T22:22:58.003+0530 [TRACE] Meta.Backend: using default local state only (no backend configuration, and no existing initialized backend)
+2024-11-27T22:22:58.003+0530 [TRACE] Meta.Backend: instantiated backend of type <nil>
+2024-11-27T22:22:58.004+0530 [DEBUG] checking for provisioner in "."
+2024-11-27T22:22:58.030+0530 [DEBUG] checking for provisioner in "/opt/homebrew/bin"
+2024-11-27T22:22:58.030+0530 [TRACE] Meta.Backend: backend <nil> does not support operations, so wrapping it in a local backend
+2024-11-27T22:22:58.031+0530 [TRACE] backend/local: state manager for workspace "default" will:
+ - read initial snapshot from terraform.tfstate
+ - write new snapshots to terraform.tfstate
+ - create any backup at terraform.tfstate.backup
+2024-11-27T22:22:58.031+0530 [TRACE] statemgr.Filesystem: reading initial snapshot from terraform.tfstate
+2024-11-27T22:22:58.031+0530 [TRACE] statemgr.Filesystem: read snapshot with lineage "3a57ecdd-2536-075b-2e31-6dda7fe8a4c4" serial 1
+2024-11-27T22:22:58.033+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/hashicorp/cloudinit v1.63.0 for darwin_arm64 at /Users/ujjwal/lib/terraform/providers/registry.terraform.io/hashicorp/cloudinit/1.63.0/darwin_arm64
+2024-11-27T22:22:58.033+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/hashicorp/ibm v1.64.0 for darwin_arm64 at /Users/ujjwal/lib/terraform/providers/registry.terraform.io/hashicorp/ibm/1.64.0/darwin_arm64
+2024-11-27T22:22:58.033+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/hashicorp/local v1.63.0 for darwin_arm64 at /Users/ujjwal/lib/terraform/providers/registry.terraform.io/hashicorp/local/1.63.0/darwin_arm64
+2024-11-27T22:22:58.034+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/hashicorp/meetup v1.0.0 for darwin_arm64 at /Users/ujjwal/lib/terraform/providers/registry.terraform.io/hashicorp/meetup/1.0.0/darwin_arm64
+2024-11-27T22:22:58.034+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/hashicorp/migration v1.0.0 for darwin_arm64 at /Users/ujjwal/lib/terraform/providers/registry.terraform.io/hashicorp/migration/1.0.0/darwin_arm64
+2024-11-27T22:22:58.035+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/hashicorp/null v1.63.0 for darwin_arm64 at /Users/ujjwal/lib/terraform/providers/registry.terraform.io/hashicorp/null/1.63.0/darwin_arm64
+2024-11-27T22:22:58.036+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/hashicorp/random v1.63.0 for darwin_arm64 at /Users/ujjwal/lib/terraform/providers/registry.terraform.io/hashicorp/random/1.63.0/darwin_arm64
+2024-11-27T22:22:58.036+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/hashicorp/template v1.63.0 for darwin_arm64 at /Users/ujjwal/lib/terraform/providers/registry.terraform.io/hashicorp/template/1.63.0/darwin_arm64
+2024-11-27T22:22:58.036+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/hashicorp/time v1.63.0 for darwin_arm64 at /Users/ujjwal/lib/terraform/providers/registry.terraform.io/hashicorp/time/1.63.0/darwin_arm64
+2024-11-27T22:22:58.037+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/hashicorp/tls v1.63.0 for darwin_arm64 at /Users/ujjwal/lib/terraform/providers/registry.terraform.io/hashicorp/tls/1.63.0/darwin_arm64
+2024-11-27T22:22:58.037+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/ibm-cloud/ibm v1.63.0 for darwin_arm64 at /Users/ujjwal/lib/terraform/providers/registry.terraform.io/ibm-cloud/ibm/1.63.0/darwin_arm64
+2024-11-27T22:22:58.038+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/test/test v1.0.0 for darwin_arm64 at /Users/ujjwal/lib/terraform/providers/registry.terraform.io/test/test/1.0.0/darwin_arm64
+2024-11-27T22:22:58.038+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/ujjwal/example v1.0.0 for darwin_arm64 at /Users/ujjwal/lib/terraform/providers/registry.terraform.io/ujjwal/example/1.0.0/darwin_arm64
+2024-11-27T22:22:58.038+0530 [TRACE] providercache.fillMetaCache: scanning directory .terraform/providers
+2024-11-27T22:22:58.038+0530 [TRACE] getproviders.SearchLocalDirectory: failed to resolve symlinks for .terraform/providers: lstat .terraform: no such file or directory
+2024-11-27T22:22:58.038+0530 [TRACE] providercache.fillMetaCache: error while scanning directory .terraform/providers: cannot search .terraform/providers: lstat .terraform/providers: no such file or directory
+2024-11-27T22:22:58.038+0530 [TRACE] providercache.Dir.InstallPackage: installing registry.terraform.io/hashicorp/ibm v1.64.0 from /Users/ujjwal/lib/terraform/providers/registry.terraform.io/hashicorp/ibm/1.64.0/darwin_arm64
+2024-11-27T22:22:58.039+0530 [TRACE] providercache.fillMetaCache: scanning directory .terraform/providers
+2024-11-27T22:22:58.039+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/hashicorp/ibm v1.64.0 for darwin_arm64 at .terraform/providers/registry.terraform.io/hashicorp/ibm/1.64.0/darwin_arm64
+2024-11-27T22:22:58.039+0530 [TRACE] providercache.fillMetaCache: including .terraform/providers/registry.terraform.io/hashicorp/ibm/1.64.0/darwin_arm64 as a candidate package for registry.terraform.io/hashicorp/ibm 1.64.0
+2024-11-27T22:22:58.131+0530 [TRACE] providercache.fillMetaCache: using cached result from previous scan of .terraform/providers
+2024-11-27T22:22:58.131+0530 [TRACE] providercache.Dir.InstallPackage: installing registry.terraform.io/hashicorp/random v1.63.0 from /Users/ujjwal/lib/terraform/providers/registry.terraform.io/hashicorp/random/1.63.0/darwin_arm64
+2024-11-27T22:22:58.132+0530 [TRACE] providercache.fillMetaCache: scanning directory .terraform/providers
+2024-11-27T22:22:58.132+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/hashicorp/ibm v1.64.0 for darwin_arm64 at .terraform/providers/registry.terraform.io/hashicorp/ibm/1.64.0/darwin_arm64
+2024-11-27T22:22:58.132+0530 [TRACE] getproviders.SearchLocalDirectory: found registry.terraform.io/hashicorp/random v1.63.0 for darwin_arm64 at .terraform/providers/registry.terraform.io/hashicorp/random/1.63.0/darwin_arm64
+2024-11-27T22:22:58.132+0530 [TRACE] providercache.fillMetaCache: including .terraform/providers/registry.terraform.io/hashicorp/ibm/1.64.0/darwin_arm64 as a candidate package for registry.terraform.io/hashicorp/ibm 1.64.0
+2024-11-27T22:22:58.132+0530 [TRACE] providercache.fillMetaCache: including .terraform/providers/registry.terraform.io/hashicorp/random/1.63.0/darwin_arm64 as a candidate package for registry.terraform.io/hashicorp/random 1.63.0
+2024-11-27T22:23:06.335+0530 [INFO]  Terraform version: 1.11.0 dev
+2024-11-27T22:23:06.335+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.70.0
+2024-11-27T22:23:06.335+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.23.0
+2024-11-27T22:23:06.335+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-27T22:23:06.335+0530 [DEBUG] using github.com/zclconf/go-cty v1.15.1-0.20241111215639-63279be090d7
+2024-11-27T22:23:06.335+0530 [INFO]  Go runtime version: go1.23.3
+2024-11-27T22:23:06.335+0530 [INFO]  CLI args: []string{"./terraform", "docs", "random", "-l"}
+2024-11-27T22:23:06.335+0530 [TRACE] Stdout is a terminal of width 142
+2024-11-27T22:23:06.335+0530 [TRACE] Stderr is a terminal of width 142
+2024-11-27T22:23:06.335+0530 [TRACE] Stdin is a terminal
+2024-11-27T22:23:06.335+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-27T22:23:06.335+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-27T22:23:06.336+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-27T22:23:06.336+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-27T22:23:06.336+0530 [INFO]  CLI command args: []string{"docs", "random", "-l"}
+2024-11-27T22:26:02.384+0530 [INFO]  Terraform version: 1.11.0 dev
+2024-11-27T22:26:02.386+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.70.0
+2024-11-27T22:26:02.386+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.23.0
+2024-11-27T22:26:02.386+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-27T22:26:02.386+0530 [DEBUG] using github.com/zclconf/go-cty v1.15.1-0.20241111215639-63279be090d7
+2024-11-27T22:26:02.386+0530 [INFO]  Go runtime version: go1.23.3
+2024-11-27T22:26:02.386+0530 [INFO]  CLI args: []string{"./terraform", "docs", "random", "-l"}
+2024-11-27T22:26:02.386+0530 [TRACE] Stdout is a terminal of width 142
+2024-11-27T22:26:02.386+0530 [TRACE] Stderr is a terminal of width 142
+2024-11-27T22:26:02.386+0530 [TRACE] Stdin is a terminal
+2024-11-27T22:26:02.386+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-27T22:26:02.386+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-27T22:26:02.386+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-27T22:26:02.386+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-27T22:26:02.387+0530 [INFO]  CLI command args: []string{"docs", "random", "-l"}
+2024-11-27T22:51:31.887+0530 [INFO]  Terraform version: 1.11.0 dev
+2024-11-27T22:51:31.889+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.70.0
+2024-11-27T22:51:31.889+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.23.0
+2024-11-27T22:51:31.889+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-27T22:51:31.889+0530 [DEBUG] using github.com/zclconf/go-cty v1.15.1-0.20241111215639-63279be090d7
+2024-11-27T22:51:31.889+0530 [INFO]  Go runtime version: go1.23.3
+2024-11-27T22:51:31.889+0530 [INFO]  CLI args: []string{"./terraform", "docs", "random", "-l"}
+2024-11-27T22:51:31.889+0530 [TRACE] Stdout is a terminal of width 142
+2024-11-27T22:51:31.889+0530 [TRACE] Stderr is a terminal of width 142
+2024-11-27T22:51:31.889+0530 [TRACE] Stdin is a terminal
+2024-11-27T22:51:31.889+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-27T22:51:31.889+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-27T22:51:31.890+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-27T22:51:31.890+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-27T22:51:31.890+0530 [INFO]  CLI command args: []string{"docs", "random", "-l"}
+2024-11-27T22:53:36.698+0530 [INFO]  Terraform version: 1.11.0 dev
+2024-11-27T22:53:36.698+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.70.0
+2024-11-27T22:53:36.698+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.23.0
+2024-11-27T22:53:36.698+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-27T22:53:36.698+0530 [DEBUG] using github.com/zclconf/go-cty v1.15.1-0.20241111215639-63279be090d7
+2024-11-27T22:53:36.698+0530 [INFO]  Go runtime version: go1.23.3
+2024-11-27T22:53:36.698+0530 [INFO]  CLI args: []string{"./terraform", "docs", "ibm", "-l"}
+2024-11-27T22:53:36.698+0530 [TRACE] Stdout is a terminal of width 125
+2024-11-27T22:53:36.698+0530 [TRACE] Stderr is a terminal of width 125
+2024-11-27T22:53:36.698+0530 [TRACE] Stdin is a terminal
+2024-11-27T22:53:36.698+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-27T22:53:36.698+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-27T22:53:36.699+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-27T22:53:36.699+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-27T22:53:36.699+0530 [INFO]  CLI command args: []string{"docs", "ibm", "-l"}
+2024-11-27T23:05:31.957+0530 [INFO]  Terraform version: 1.7.5
+2024-11-27T23:05:31.958+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.41.0
+2024-11-27T23:05:31.958+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.19.1
+2024-11-27T23:05:31.958+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-27T23:05:31.958+0530 [DEBUG] using github.com/zclconf/go-cty v1.14.1
+2024-11-27T23:05:31.958+0530 [INFO]  Go runtime version: go1.21.8
+2024-11-27T23:05:31.958+0530 [INFO]  CLI args: []string{"terraform", "docs", "random", "-l"}
+2024-11-27T23:05:31.958+0530 [TRACE] Stdout is a terminal of width 125
+2024-11-27T23:05:31.958+0530 [TRACE] Stderr is a terminal of width 125
+2024-11-27T23:05:31.958+0530 [TRACE] Stdin is a terminal
+2024-11-27T23:05:31.958+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-27T23:05:31.958+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-27T23:05:31.959+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-27T23:05:31.959+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-27T23:05:31.959+0530 [INFO]  CLI command args: []string{"docs", "random", "-l"}
+2024-11-27T23:05:39.684+0530 [INFO]  Terraform version: 1.11.0 dev
+2024-11-27T23:05:39.685+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.70.0
+2024-11-27T23:05:39.685+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.23.0
+2024-11-27T23:05:39.685+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-27T23:05:39.685+0530 [DEBUG] using github.com/zclconf/go-cty v1.15.1-0.20241111215639-63279be090d7
+2024-11-27T23:05:39.685+0530 [INFO]  Go runtime version: go1.23.3
+2024-11-27T23:05:39.685+0530 [INFO]  CLI args: []string{"./terraform", "docs", "random", "-l"}
+2024-11-27T23:05:39.685+0530 [TRACE] Stdout is a terminal of width 125
+2024-11-27T23:05:39.685+0530 [TRACE] Stderr is a terminal of width 125
+2024-11-27T23:05:39.685+0530 [TRACE] Stdin is a terminal
+2024-11-27T23:05:39.685+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-27T23:05:39.685+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-27T23:05:39.685+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-27T23:05:39.685+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-27T23:05:39.686+0530 [INFO]  CLI command args: []string{"docs", "random", "-l"}
+2024-11-28T09:20:14.927+0530 [INFO]  Terraform version: 1.11.0 dev
+2024-11-28T09:20:14.928+0530 [DEBUG] using github.com/hashicorp/go-tfe v1.70.0
+2024-11-28T09:20:14.928+0530 [DEBUG] using github.com/hashicorp/hcl/v2 v2.23.0
+2024-11-28T09:20:14.928+0530 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2024-11-28T09:20:14.928+0530 [DEBUG] using github.com/zclconf/go-cty v1.15.1-0.20241111215639-63279be090d7
+2024-11-28T09:20:14.928+0530 [INFO]  Go runtime version: go1.23.3
+2024-11-28T09:20:14.928+0530 [INFO]  CLI args: []string{"./terraform", "docs", "random", "-l"}
+2024-11-28T09:20:14.928+0530 [TRACE] Stdout is a terminal of width 125
+2024-11-28T09:20:14.928+0530 [TRACE] Stderr is a terminal of width 125
+2024-11-28T09:20:14.928+0530 [TRACE] Stdin is a terminal
+2024-11-28T09:20:14.928+0530 [DEBUG] Attempting to open CLI config file: /Users/ujjwal/.terraformrc
+2024-11-28T09:20:14.928+0530 [INFO]  Loading CLI configuration from /Users/ujjwal/.terraformrc
+2024-11-28T09:20:14.929+0530 [DEBUG] Explicit provider installation configuration is set
+2024-11-28T09:20:14.929+0530 [TRACE] Selected provider installation method cliconfig.ProviderInstallationFilesystemMirror("/Users/ujjwal/lib/terraform/providers/") with includes [registry.terraform.io/hashicorp/* registry.terraform.io/ibm-cloud/* registry.opentofu.org/hashicorp/* registry.opentofu.org/ibm-cloud/*] and excludes []
+2024-11-28T09:20:14.929+0530 [INFO]  CLI command args: []string{"docs", "random", "-l"}

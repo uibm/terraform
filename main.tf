@@ -1,5 +1,7 @@
-provider ibm{}
+provider random{}
 
-resource ibm_is_vpc this {
-    name = "test"
+resource "random_integer" "priority" {
+  min = 1
+  max = 50000
+
 }
