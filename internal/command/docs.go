@@ -1,12 +1,11 @@
 package command
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -15,13 +14,8 @@ import (
 
 var cmdLogger = log.New(os.Stdout, "CommandDocsLog: ", 0)
 
-// GitHubFileInfo represents file information from GitHub API
-type GitHubFileInfo struct {
-	Name        string `json:"name"`
-	Path        string `json:"path"`
-	Type        string `json:"type"`
-	DownloadURL string `json:"download_url"`
-}
+type CommandDocs struct{}
+
 type ProviderDetails struct {
 	Source      string
 	Version     string
@@ -30,17 +24,14 @@ type ProviderDetails struct {
 	DocsVersion string
 }
 
-type CommandDocs struct{}
-
 func (c *CommandDocs) Help() string {
 	return `
 Usage: terraform docs <provider> [options] [resource_name]
 
-Downloads and shows provider documentation.
+Shows provider documentation for resources and data sources.
 
 Options:
   -l    List all available resources and data sources
-  -v    Show verbose logging
 
 Examples:
   terraform docs aws -l            # List all AWS provider resources
@@ -49,7 +40,7 @@ Examples:
 }
 
 func (c *CommandDocs) Synopsis() string {
-	return "Downloads and shows provider documentation"
+	return "Shows provider documentation for resources and data sources"
 }
 
 func (c *CommandDocs) Run(args []string) int {
@@ -75,11 +66,11 @@ func (c *CommandDocs) Run(args []string) int {
 		return 1
 	}
 
-	// Download documentation if it doesn't exist
+	// Only clone if docs don't exist
 	if !isDocumentationCached(docsDir) {
-		cmdLogger.Printf("Documentation not cached, downloading...")
-		if err := downloadProviderDocs(providerDetails, docsDir); err != nil {
-			cmdLogger.Printf("Error downloading documentation: %s", err)
+		cmdLogger.Printf("Documentation not cached, cloning repository...")
+		if err := cloneAndOrganizeDocs(providerDetails, docsDir); err != nil {
+			cmdLogger.Printf("Error preparing documentation: %s", err)
 			return 1
 		}
 	}
@@ -120,258 +111,127 @@ func getProviderFromLockFile(providerName string) (*ProviderDetails, error) {
 		Source:      matches[1],
 		Version:     matches[2],
 		RepoOwner:   parts[1],
-		RepoName:    parts[2], // Changed: Don't add terraform-provider- prefix
+		RepoName:    parts[2],
 		DocsVersion: "main",
 	}
 
-	// Special case for IBM
+	// Handle special cases
 	if details.RepoOwner == "ibm" {
 		details.RepoOwner = "IBM-Cloud"
-		details.RepoName = "terraform-provider-ibm" // Set full name for IBM
-	} else {
-		repoName := details.RepoName
-		details.RepoName = fmt.Sprintf("terraform-provider-%s", repoName)
 	}
 
-	cmdLogger.Printf("Provider details: Owner=%s, Repo=%s, Version=%s",
-		details.RepoOwner, details.RepoName, details.Version)
+	// Add terraform-provider- prefix if not present
+	if !strings.HasPrefix(details.RepoName, "terraform-provider-") {
+		details.RepoName = "terraform-provider-" + details.RepoName
+	}
 
 	return details, nil
 }
 
-func downloadProviderDocs(details *ProviderDetails, docsDir string) error {
-	cmdLogger.Printf("=== Starting Documentation Download ===")
-	cmdLogger.Printf("Provider: %s/%s (Version: %s)", details.RepoOwner, details.RepoName, details.Version)
-	cmdLogger.Printf("Output Directory: %s", docsDir)
-	cmdLogger.Printf("=====================================")
+func cloneAndOrganizeDocs(details *ProviderDetails, docsDir string) error {
+	// Create temporary directory for cloning
+	tmpDir, err := os.MkdirTemp("", "terraform-provider-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp directory: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
 
-	// Try both modern and legacy documentation paths
-	paths := []string{
-		"docs",
-		"website/docs",
+	// Construct repository URL
+	repoURL := fmt.Sprintf("https://github.com/%s/%s.git",
+		details.RepoOwner, details.RepoName)
+
+	cmdLogger.Printf("Cloning %s...", repoURL)
+
+	// Clone repository
+	cmd := exec.Command("git", "clone", "--depth", "1", repoURL, tmpDir)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to clone repository: %s", string(output))
 	}
 
-	totalFound := 0
-	totalDownloaded := 0
-	totalErrors := 0
+	// Look for documentation in known locations
+	docsPaths := []struct {
+		src  string
+		dest string
+	}{
+		{filepath.Join(tmpDir, "docs"), filepath.Join(docsDir, "docs")},
+		{filepath.Join(tmpDir, "website", "docs"), filepath.Join(docsDir, "website", "docs")},
+	}
 
-	for _, basePath := range paths {
-		cmdLogger.Printf("\n=== Checking Base Path: %s ===", basePath)
-
-		files, err := listGitHubContents(details, basePath)
-		if err != nil {
-			cmdLogger.Printf("❌ Error listing contents for %s: %s", basePath, err)
-			totalErrors++
-			continue
-		}
-
-		if len(files) == 0 {
-			cmdLogger.Printf("📝 No files found in %s", basePath)
-			continue
-		}
-
-		cmdLogger.Printf("📂 Found %d items in %s", len(files), basePath)
-		totalFound += len(files)
-
-		// Process each file/directory
-		for _, file := range files {
-			cmdLogger.Printf("\n--- Processing: %s ---", file.Path)
-			cmdLogger.Printf("Type: %s", file.Type)
-			if file.DownloadURL != "" {
-				cmdLogger.Printf("Download URL: %s", file.DownloadURL)
+	foundDocs := false
+	for _, path := range docsPaths {
+		if _, err := os.Stat(path.src); err == nil {
+			cmdLogger.Printf("Found documentation in %s", path.src)
+			if err := copyDir(path.src, path.dest); err != nil {
+				cmdLogger.Printf("Error copying docs from %s: %s", path.src, err)
+				continue
 			}
-
-			if file.Type == "dir" {
-				cmdLogger.Printf("📂 Entering directory: %s", file.Path)
-				subFiles, err := listGitHubContents(details, file.Path)
-				if err != nil {
-					cmdLogger.Printf("❌ Error listing contents for %s: %s", file.Path, err)
-					totalErrors++
-					continue
-				}
-
-				cmdLogger.Printf("📂 Found %d files in subdirectory %s", len(subFiles), file.Path)
-				totalFound += len(subFiles)
-
-				for _, subFile := range subFiles {
-					cmdLogger.Printf("\n---> Examining: %s", subFile.Path)
-					cmdLogger.Printf("Type: %s", subFile.Type)
-
-					if subFile.Type == "file" {
-						if shouldDownloadFile(subFile.Name) {
-							cmdLogger.Printf("📄 Attempting to download: %s", subFile.Path)
-							outputPath := filepath.Join(docsDir, subFile.Path)
-							if err := downloadGitHubFile(subFile.DownloadURL, outputPath); err != nil {
-								cmdLogger.Printf("❌ Error downloading %s: %s", subFile.Path, err)
-								totalErrors++
-							} else {
-								cmdLogger.Printf("✅ Successfully downloaded: %s", subFile.Path)
-								totalDownloaded++
-							}
-						} else {
-							cmdLogger.Printf("⏭️ Skipping non-documentation file: %s", subFile.Name)
-						}
-					} else {
-						cmdLogger.Printf("📂 Skipping nested directory: %s", subFile.Path)
-					}
-				}
-			} else if file.Type == "file" {
-				if shouldDownloadFile(file.Name) {
-					cmdLogger.Printf("📄 Attempting to download: %s", file.Path)
-					outputPath := filepath.Join(docsDir, file.Path)
-					if err := downloadGitHubFile(file.DownloadURL, outputPath); err != nil {
-						cmdLogger.Printf("❌ Error downloading %s: %s", file.Path, err)
-						totalErrors++
-					} else {
-						cmdLogger.Printf("✅ Successfully downloaded: %s", file.Path)
-						totalDownloaded++
-					}
-				} else {
-					cmdLogger.Printf("⏭️ Skipping non-documentation file: %s", file.Name)
-				}
-			}
+			foundDocs = true
 		}
 	}
 
-	cmdLogger.Printf("\n=== Download Summary ===")
-	cmdLogger.Printf("Total items found: %d", totalFound)
-	cmdLogger.Printf("Total files downloaded: %d", totalDownloaded)
-	cmdLogger.Printf("Total errors encountered: %d", totalErrors)
-	cmdLogger.Printf("=====================")
-
-	if totalDownloaded == 0 {
-		return fmt.Errorf("no documentation files were downloaded (found: %d, errors: %d)",
-			totalFound, totalErrors)
+	if !foundDocs {
+		return fmt.Errorf("no documentation found in repository")
 	}
 
 	return nil
 }
 
-func shouldDownloadFile(filename string) bool {
-	extensions := []string{".md", ".markdown", ".html.md", ".html.markdown"}
-	lowername := strings.ToLower(filename)
+func copyDir(src, dst string) error {
+	if err := ensureDirectory(dst); err != nil {
+		return err
+	}
 
-	cmdLogger.Printf("Checking file extension: %s", filename)
-	for _, ext := range extensions {
-		if strings.HasSuffix(lowername, ext) {
-			cmdLogger.Printf("✅ File %s matches extension %s", filename, ext)
-			return true
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		sourcePath := filepath.Join(src, entry.Name())
+		destPath := filepath.Join(dst, entry.Name())
+
+		if entry.IsDir() {
+			if err := copyDir(sourcePath, destPath); err != nil {
+				return err
+			}
+		} else {
+			if err := copyFile(sourcePath, destPath); err != nil {
+				return err
+			}
 		}
 	}
-	cmdLogger.Printf("❌ File %s does not match any documentation extensions", filename)
-	return false
-}
 
-func listGitHubContents(details *ProviderDetails, path string) ([]GitHubFileInfo, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s",
-		details.RepoOwner, details.RepoName, path)
-
-	cmdLogger.Printf("\n=== GitHub API Request ===")
-	cmdLogger.Printf("URL: %s", url)
-	cmdLogger.Printf("Method: GET")
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "Terraform-Docs-Command")
-
-	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
-		cmdLogger.Printf("Using GitHub token for authentication")
-		req.Header.Set("Authorization", "Bearer "+token)
-	} else {
-		cmdLogger.Printf("⚠️ No GitHub token found - rate limits may apply")
-	}
-
-	cmdLogger.Printf("Making request...")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-
-	cmdLogger.Printf("Response Status: %d", resp.StatusCode)
-
-	if resp.StatusCode == http.StatusNotFound {
-		cmdLogger.Printf("Path %s not found in repository", path)
-		return nil, nil
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GitHub API error: Status: %d, Body: %s",
-			resp.StatusCode, string(body))
-	}
-
-	var files []GitHubFileInfo
-	if err := json.Unmarshal(body, &files); err != nil {
-		// Try single file response
-		var file GitHubFileInfo
-		if err := json.Unmarshal(body, &file); err != nil {
-			return nil, fmt.Errorf("failed to parse response: %w", err)
-		}
-		files = []GitHubFileInfo{file}
-	}
-
-	cmdLogger.Printf("Found %d items in response\n", len(files))
-	for _, file := range files {
-		cmdLogger.Printf("- %s (Type: %s)", file.Path, file.Type)
-	}
-
-	return files, nil
-}
-
-func downloadGitHubFile(url string, outputPath string) error {
-	cmdLogger.Printf("\n=== Downloading File ===")
-	cmdLogger.Printf("From: %s", url)
-	cmdLogger.Printf("To: %s", outputPath)
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return fmt.Errorf("download request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	cmdLogger.Printf("Download Status: %d", resp.StatusCode)
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("download failed with status: %s", resp.Status)
-	}
-
-	if err := ensureDirectory(filepath.Dir(outputPath)); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
-	}
-
-	out, err := os.Create(outputPath)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer out.Close()
-
-	size, err := io.Copy(out, resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
-	}
-
-	cmdLogger.Printf("✅ Successfully wrote %d bytes to %s", size, outputPath)
 	return nil
 }
+
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
+}
+
 func ensureDirectory(path string) error {
 	return os.MkdirAll(path, os.ModePerm)
 }
 
 func isDocumentationCached(docsDir string) bool {
-	_, err := os.Stat(filepath.Join(docsDir, "docs"))
-	if err == nil {
-		return true
+	for _, subDir := range []string{"docs", "website/docs"} {
+		if _, err := os.Stat(filepath.Join(docsDir, subDir)); err == nil {
+			return true
+		}
 	}
-	_, err = os.Stat(filepath.Join(docsDir, "website", "docs"))
-	return err == nil
+	return false
 }
 
 func listResources(docsDir string) int {
@@ -380,8 +240,8 @@ func listResources(docsDir string) int {
 	// Check both modern and legacy paths
 	resourcePaths := []string{
 		filepath.Join(docsDir, "docs", "resources"),
-		filepath.Join(docsDir, "website", "docs", "r"),
 		filepath.Join(docsDir, "docs", "data-sources"),
+		filepath.Join(docsDir, "website", "docs", "r"),
 		filepath.Join(docsDir, "website", "docs", "d"),
 	}
 
@@ -390,8 +250,7 @@ func listResources(docsDir string) int {
 			if err != nil {
 				return nil // Skip errors
 			}
-			if !info.IsDir() && (strings.HasSuffix(info.Name(), ".md") ||
-				strings.HasSuffix(info.Name(), ".markdown")) {
+			if !info.IsDir() && isDocumentationFile(info.Name()) {
 				name := strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
 				name = strings.TrimSuffix(name, ".html")
 				resources = append(resources, name)
@@ -432,4 +291,11 @@ func showResourceDoc(docsDir, resourceName string) int {
 
 	fmt.Printf("Documentation not found for resource: %s\n", resourceName)
 	return 1
+}
+
+func isDocumentationFile(filename string) bool {
+	ext := strings.ToLower(filepath.Ext(filename))
+	return ext == ".md" || ext == ".markdown" ||
+		strings.HasSuffix(filename, ".html.md") ||
+		strings.HasSuffix(filename, ".html.markdown")
 }
