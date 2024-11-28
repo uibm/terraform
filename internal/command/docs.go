@@ -58,28 +58,36 @@ func (c *CommandDocs) Run(args []string) int {
 		cmdLogger.Printf("Error reading lock file: %s", err)
 		return 1
 	}
+	cmdLogger.Printf("Provider details found: owner=%s, repo=%s",
+		providerDetails.RepoOwner, providerDetails.RepoName)
 
-	// Create docs directory under .terraform
-	docsDir := filepath.Join(".terraform", "docs", providerName, providerDetails.Version)
+	// Create docs directory under .terraform - without version
+	docsDir := filepath.Join(".terraform", "docs", providerName)
+	cmdLogger.Printf("Using documentation directory: %s", docsDir)
+
 	if err := ensureDirectory(docsDir); err != nil {
 		cmdLogger.Printf("Error creating docs directory: %s", err)
 		return 1
 	}
 
-	// Only clone if docs don't exist
+	// Check if documentation is already cached
 	if !isDocumentationCached(docsDir) {
 		cmdLogger.Printf("Documentation not cached, cloning repository...")
 		if err := cloneAndOrganizeDocs(providerDetails, docsDir); err != nil {
 			cmdLogger.Printf("Error preparing documentation: %s", err)
 			return 1
 		}
+	} else {
+		cmdLogger.Printf("Using cached documentation from: %s", docsDir)
 	}
 
 	// Handle command options
 	if len(args) > 1 {
 		if args[1] == "-l" {
+			cmdLogger.Printf("Listing resources from: %s", docsDir)
 			return listResources(docsDir)
 		}
+		cmdLogger.Printf("Showing documentation for resource: %s", args[1])
 		return showResourceDoc(docsDir, args[1])
 	}
 
@@ -127,26 +135,26 @@ func getProviderFromLockFile(providerName string) (*ProviderDetails, error) {
 
 	return details, nil
 }
-
 func cloneAndOrganizeDocs(details *ProviderDetails, docsDir string) error {
 	// Create temporary directory for cloning
 	tmpDir, err := os.MkdirTemp("", "terraform-provider-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
+	cmdLogger.Printf("Created temporary directory: %s", tmpDir)
 	defer os.RemoveAll(tmpDir)
 
 	// Construct repository URL
 	repoURL := fmt.Sprintf("https://github.com/%s/%s.git",
 		details.RepoOwner, details.RepoName)
-
-	cmdLogger.Printf("Cloning %s...", repoURL)
+	cmdLogger.Printf("Cloning from: %s", repoURL)
 
 	// Clone repository
 	cmd := exec.Command("git", "clone", "--depth", "1", repoURL, tmpDir)
 	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to clone repository: %s", string(output))
+		return fmt.Errorf("failed to clone repository: %s: %s", err, string(output))
 	}
+	cmdLogger.Printf("Successfully cloned repository")
 
 	// Look for documentation in known locations
 	docsPaths := []struct {
@@ -159,6 +167,7 @@ func cloneAndOrganizeDocs(details *ProviderDetails, docsDir string) error {
 
 	foundDocs := false
 	for _, path := range docsPaths {
+		cmdLogger.Printf("Checking for docs in: %s", path.src)
 		if _, err := os.Stat(path.src); err == nil {
 			cmdLogger.Printf("Found documentation in %s", path.src)
 			if err := copyDir(path.src, path.dest); err != nil {
@@ -166,6 +175,9 @@ func cloneAndOrganizeDocs(details *ProviderDetails, docsDir string) error {
 				continue
 			}
 			foundDocs = true
+			cmdLogger.Printf("Copied documentation to: %s", path.dest)
+		} else {
+			cmdLogger.Printf("No documentation found in: %s", path.src)
 		}
 	}
 
@@ -226,16 +238,25 @@ func ensureDirectory(path string) error {
 }
 
 func isDocumentationCached(docsDir string) bool {
+	// Check for actual content in either docs or website/docs
 	for _, subDir := range []string{"docs", "website/docs"} {
-		if _, err := os.Stat(filepath.Join(docsDir, subDir)); err == nil {
-			return true
+		path := filepath.Join(docsDir, subDir)
+		if _, err := os.Stat(path); err == nil {
+			// Verify there are actual files
+			entries, err := os.ReadDir(path)
+			if err == nil && len(entries) > 0 {
+				cmdLogger.Printf("Found existing documentation in: %s", path)
+				return true
+			}
 		}
 	}
+	cmdLogger.Printf("No valid documentation cache found in: %s", docsDir)
 	return false
 }
 
 func listResources(docsDir string) int {
 	var resources []string
+	cmdLogger.Printf("Searching for resources in: %s", docsDir)
 
 	// Check both modern and legacy paths
 	resourcePaths := []string{
@@ -246,13 +267,16 @@ func listResources(docsDir string) int {
 	}
 
 	for _, path := range resourcePaths {
+		cmdLogger.Printf("Checking path: %s", path)
 		err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
+				cmdLogger.Printf("Error accessing %s: %s", path, err)
 				return nil // Skip errors
 			}
 			if !info.IsDir() && isDocumentationFile(info.Name()) {
 				name := strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
 				name = strings.TrimSuffix(name, ".html")
+				cmdLogger.Printf("Found resource: %s", name)
 				resources = append(resources, name)
 			}
 			return nil
@@ -261,6 +285,8 @@ func listResources(docsDir string) int {
 			cmdLogger.Printf("Error walking path %s: %s", path, err)
 		}
 	}
+
+	cmdLogger.Printf("Found %d resources", len(resources))
 
 	// Sort and print resources
 	sort.Strings(resources)
