@@ -61,7 +61,6 @@ func (c *CommandDocs) Run(args []string) int {
 	cmdLogger.Printf("Provider details found: owner=%s, repo=%s",
 		providerDetails.RepoOwner, providerDetails.RepoName)
 
-	// Create docs directory under .terraform - without version
 	docsDir := filepath.Join(".terraform", "docs", providerName)
 	cmdLogger.Printf("Using documentation directory: %s", docsDir)
 
@@ -70,15 +69,12 @@ func (c *CommandDocs) Run(args []string) int {
 		return 1
 	}
 
-	// Check if documentation is already cached
 	if !isDocumentationCached(docsDir) {
 		cmdLogger.Printf("Documentation not cached, cloning repository...")
 		if err := cloneAndOrganizeDocs(providerDetails, docsDir); err != nil {
 			cmdLogger.Printf("Error preparing documentation: %s", err)
 			return 1
 		}
-	} else {
-		cmdLogger.Printf("Using cached documentation from: %s", docsDir)
 	}
 
 	// Handle command options
@@ -87,11 +83,29 @@ func (c *CommandDocs) Run(args []string) int {
 			cmdLogger.Printf("Listing resources from: %s", docsDir)
 			return listResources(docsDir)
 		}
-		cmdLogger.Printf("Showing documentation for resource: %s", args[1])
-		return showResourceDoc(docsDir, args[1])
+
+		resourceName := args[1]
+		resourceType := "both" // Default to searching both types
+
+		// Check for resource type flag
+		if len(args) > 2 {
+			switch args[2] {
+			case "-d":
+				resourceType = "data"
+				cmdLogger.Printf("Looking for data source: %s", resourceName)
+			case "-r":
+				resourceType = "resource"
+				cmdLogger.Printf("Looking for resource: %s", resourceName)
+			default:
+				fmt.Println("Invalid flag. Please use -d for data source or -r for resource")
+				return 1
+			}
+		}
+
+		return showResourceDoc(docsDir, resourceName, resourceType)
 	}
 
-	fmt.Println("Please specify either -l to list resources or provide a resource name")
+	fmt.Println("Please specify either -l to list resources or provide a resource name with -d/-r flag")
 	return 0
 }
 
@@ -255,29 +269,30 @@ func isDocumentationCached(docsDir string) bool {
 }
 
 func listResources(docsDir string) int {
-	var resources []string
 	cmdLogger.Printf("Searching for resources in: %s", docsDir)
 
-	// Check both modern and legacy paths
-	resourcePaths := []string{
-		filepath.Join(docsDir, "docs", "resources"),
-		filepath.Join(docsDir, "docs", "data-sources"),
-		filepath.Join(docsDir, "website", "docs", "r"),
-		filepath.Join(docsDir, "website", "docs", "d"),
+	// Keep resources and data sources separate
+	resources := make([]string, 0)
+	dataSources := make([]string, 0)
+
+	// Modern structure
+	modernPaths := map[string]*[]string{
+		filepath.Join(docsDir, "docs", "resources"):    &resources,
+		filepath.Join(docsDir, "docs", "data-sources"): &dataSources,
 	}
 
-	for _, path := range resourcePaths {
+	// Check modern paths
+	for path, slice := range modernPaths {
 		cmdLogger.Printf("Checking path: %s", path)
 		err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				cmdLogger.Printf("Error accessing %s: %s", path, err)
-				return nil // Skip errors
+				return nil
 			}
 			if !info.IsDir() && isDocumentationFile(info.Name()) {
 				name := strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
-				name = strings.TrimSuffix(name, ".html")
-				cmdLogger.Printf("Found resource: %s", name)
-				resources = append(resources, name)
+				*slice = append(*slice, name)
+				cmdLogger.Printf("Found: %s", name)
 			}
 			return nil
 		})
@@ -286,38 +301,123 @@ func listResources(docsDir string) int {
 		}
 	}
 
-	cmdLogger.Printf("Found %d resources", len(resources))
-
-	// Sort and print resources
-	sort.Strings(resources)
-	for _, resource := range resources {
-		fmt.Printf("* %s\n", resource)
+	// Print resources by type
+	if len(resources) > 0 {
+		fmt.Println("\nResources:")
+		sort.Strings(resources)
+		for _, resource := range resources {
+			fmt.Printf("* %s\n", resource)
+		}
 	}
 
+	if len(dataSources) > 0 {
+		fmt.Println("\nData Sources:")
+		sort.Strings(dataSources)
+		for _, dataSource := range dataSources {
+			fmt.Printf("* %s\n", dataSource)
+		}
+	}
+
+	cmdLogger.Printf("Found %d resources and %d data sources",
+		len(resources), len(dataSources))
 	return 0
 }
 
-func showResourceDoc(docsDir, resourceName string) int {
-	paths := []string{
-		filepath.Join(docsDir, "docs", "resources", resourceName+".md"),
-		filepath.Join(docsDir, "docs", "data-sources", resourceName+".md"),
-		filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.md"),
-		filepath.Join(docsDir, "website", "docs", "d", resourceName+".html.md"),
-		filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.markdown"),
-		filepath.Join(docsDir, "website", "docs", "d", resourceName+".html.markdown"),
+func showResourceDoc(docsDir, resourceName, resourceType string) int {
+	var paths []string
+
+	switch resourceType {
+	case "data":
+		// Only check data source paths
+		paths = []string{
+			filepath.Join(docsDir, "docs", "data-sources", resourceName+".md"),
+			filepath.Join(docsDir, "website", "docs", "d", resourceName+".html.md"),
+			filepath.Join(docsDir, "website", "docs", "d", resourceName+".html.markdown"),
+		}
+	case "resource":
+		// Only check resource paths
+		paths = []string{
+			filepath.Join(docsDir, "docs", "resources", resourceName+".md"),
+			filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.md"),
+			filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.markdown"),
+		}
+	default:
+		// Check all paths (for backward compatibility)
+		paths = []string{
+			filepath.Join(docsDir, "docs", "resources", resourceName+".md"),
+			filepath.Join(docsDir, "docs", "data-sources", resourceName+".md"),
+			filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.md"),
+			filepath.Join(docsDir, "website", "docs", "d", resourceName+".html.md"),
+			filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.markdown"),
+			filepath.Join(docsDir, "website", "docs", "d", resourceName+".html.markdown"),
+		}
+	}
+
+	cmdLogger.Printf("Searching for documentation in the following paths:")
+	for _, path := range paths {
+		cmdLogger.Printf("- %s", path)
 	}
 
 	for _, path := range paths {
 		content, err := os.ReadFile(path)
 		if err == nil {
+			cmdLogger.Printf("Found documentation at: %s", path)
 			fmt.Println(string(content))
 			return 0
 		}
 	}
 
-	fmt.Printf("Documentation not found for resource: %s\n", resourceName)
+	switch resourceType {
+	case "data":
+		fmt.Printf("Documentation not found for data source: %s\n", resourceName)
+	case "resource":
+		fmt.Printf("Documentation not found for resource: %s\n", resourceName)
+	default:
+		fmt.Printf("Documentation not found for: %s\n", resourceName)
+	}
 	return 1
 }
+
+// func showResourceDoc(docsDir, resourceName string, isDataSource bool) int {
+// 	var docPath string
+// 	if isDataSource {
+// 		docPath = filepath.Join(docsDir, "docs", "data-sources", resourceName+".md")
+// 	} else {
+// 		docPath = filepath.Join(docsDir, "docs", "resources", resourceName+".md")
+// 	}
+
+// 	content, err := os.ReadFile(docPath)
+// 	if err != nil {
+// 		fmt.Printf("Documentation not found for %s: %s\n",
+// 			resourceName, err)
+// 		return 1
+// 	}
+
+// 	fmt.Println(string(content))
+// 	return 0
+// }
+
+// func showResourceDoc(docsDir, resourceName string) int {
+// 	paths := []string{
+// 		filepath.Join(docsDir, "docs", "resources", resourceName+".md"),
+// 		filepath.Join(docsDir, "docs", "data-sources", resourceName+".md"),
+// 		filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.md"),
+// 		filepath.Join(docsDir, "website", "docs", "d", resourceName+".html.md"),
+// 		filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.markdown"),
+// 		filepath.Join(docsDir, "website", "docs", "d", resourceName+".html.markdown"),
+// 	}
+
+// 	for _, path := range paths {
+// 		content, err := os.ReadFile(path)
+// 		if err == nil {
+// 			fmt.Println(string(content))
+// 			return 0
+// 		}
+// 	}
+
+// 	fmt.Printf("Documentation not found for resource: %s\n", resourceName)
+// 	return 1
+// }
 
 func isDocumentationFile(filename string) bool {
 	ext := strings.ToLower(filepath.Ext(filename))
