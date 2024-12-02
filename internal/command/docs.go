@@ -26,16 +26,20 @@ type ProviderDetails struct {
 
 func (c *CommandDocs) Help() string {
 	return `
-Usage: terraform docs <provider> [options] [resource_name]
+Usage: terraform docs <provider> [options] [resource_name] [search_keyword]
 
 Shows provider documentation for resources and data sources.
 
 Options:
-  -l    List all available resources and data sources
+  -l              List all available resources and data sources
+  -r              Specify resource type documentation
+  -d              Specify data source type documentation
+  search_keyword  Optional keyword to search within the documentation
 
 Examples:
-  terraform docs aws -l            # List all AWS provider resources
-  terraform docs random random_id  # Show documentation for random_id resource
+  terraform docs aws -l                    # List all AWS provider resources
+  terraform docs random random_id -r       # Show full documentation for random_id resource
+  terraform docs aws instance -r 'Example' # Show example section for AWS instance resource
 `
 }
 
@@ -85,7 +89,8 @@ func (c *CommandDocs) Run(args []string) int {
 		}
 
 		resourceName := args[1]
-		resourceType := "both" // Default to searching both types
+		var resourceType string
+		var searchKeyword string
 
 		// Check for resource type flag
 		if len(args) > 2 {
@@ -100,9 +105,19 @@ func (c *CommandDocs) Run(args []string) int {
 				fmt.Println("Invalid flag. Please use -d for data source or -r for resource")
 				return 1
 			}
+
+			// Check for search keyword (it will be the 4th argument)
+			if len(args) > 3 {
+				searchKeyword = args[3]
+				if len(searchKeyword) > 0 && (searchKeyword[0] == '\'' || searchKeyword[0] == '"') {
+					// Remove surrounding quotes if present
+					searchKeyword = searchKeyword[1 : len(searchKeyword)-1]
+				}
+				cmdLogger.Printf("Search keyword provided: %s", searchKeyword)
+			}
 		}
 
-		return showResourceDoc(docsDir, resourceName, resourceType)
+		return showResourceDoc(docsDir, resourceName, resourceType, searchKeyword)
 	}
 
 	fmt.Println("Please specify either -l to list resources or provide a resource name with -d/-r flag")
@@ -323,26 +338,23 @@ func listResources(docsDir string) int {
 	return 0
 }
 
-func showResourceDoc(docsDir, resourceName, resourceType string) int {
+func showResourceDoc(docsDir, resourceName, resourceType, searchKeyword string) int {
 	var paths []string
 
 	switch resourceType {
 	case "data":
-		// Only check data source paths
 		paths = []string{
 			filepath.Join(docsDir, "docs", "data-sources", resourceName+".md"),
 			filepath.Join(docsDir, "website", "docs", "d", resourceName+".html.md"),
 			filepath.Join(docsDir, "website", "docs", "d", resourceName+".html.markdown"),
 		}
 	case "resource":
-		// Only check resource paths
 		paths = []string{
 			filepath.Join(docsDir, "docs", "resources", resourceName+".md"),
 			filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.md"),
 			filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.markdown"),
 		}
 	default:
-		// Check all paths (for backward compatibility)
 		paths = []string{
 			filepath.Join(docsDir, "docs", "resources", resourceName+".md"),
 			filepath.Join(docsDir, "docs", "data-sources", resourceName+".md"),
@@ -353,15 +365,26 @@ func showResourceDoc(docsDir, resourceName, resourceType string) int {
 		}
 	}
 
-	cmdLogger.Printf("Searching for documentation in the following paths:")
-	for _, path := range paths {
-		cmdLogger.Printf("- %s", path)
-	}
-
 	for _, path := range paths {
 		content, err := os.ReadFile(path)
 		if err == nil {
 			cmdLogger.Printf("Found documentation at: %s", path)
+
+			if searchKeyword != "" {
+				cmdLogger.Printf("Searching for section with keyword: %s", searchKeyword)
+				lines := strings.Split(string(content), "\n")
+				section := extractSection(lines, searchKeyword)
+
+				if section != "" {
+					fmt.Printf("=== Section matching '%s' ===\n", searchKeyword)
+					fmt.Println(section)
+					fmt.Println("=== End of section ===")
+					return 0
+				}
+				fmt.Printf("No section found for keyword: %s\n", searchKeyword)
+				return 1
+			}
+
 			fmt.Println(string(content))
 			return 0
 		}
@@ -376,6 +399,73 @@ func showResourceDoc(docsDir, resourceName, resourceType string) int {
 		fmt.Printf("Documentation not found for: %s\n", resourceName)
 	}
 	return 1
+}
+
+// extractSection extracts a section from markdown content based on a keyword
+func extractSection(lines []string, keyword string) string {
+	// Create regex pattern to match the section heading
+	sectionPattern := fmt.Sprintf(`^#+\s*.*%s.*`, regexp.QuoteMeta(keyword))
+	sectionRegex, err := regexp.Compile(sectionPattern)
+	if err != nil {
+		cmdLogger.Printf("Error compiling regex: %s", err)
+		return ""
+	}
+
+	var extractedLines []string
+	capturing := false
+	currentHeadingLevel := 0
+
+	for _, line := range lines {
+		// Count the heading level if this is a heading
+		headingLevel := 0
+		for i := 0; i < len(line); i++ {
+			if line[i] == '#' {
+				headingLevel++
+			} else {
+				break
+			}
+		}
+
+		if sectionRegex.MatchString(line) {
+			if capturing {
+				break
+			}
+			capturing = true
+			currentHeadingLevel = headingLevel
+			extractedLines = append(extractedLines, line)
+		} else if capturing {
+			// Stop if we hit another heading at the same or higher level
+			if headingLevel > 0 && headingLevel <= currentHeadingLevel {
+				break
+			}
+			extractedLines = append(extractedLines, line)
+		}
+	}
+
+	// Clean up the extracted content
+	return cleanSection(strings.Join(extractedLines, "\n"))
+}
+
+// cleanSection removes empty lines from the beginning and end of the section
+func cleanSection(section string) string {
+	lines := strings.Split(section, "\n")
+
+	// Trim empty lines from start
+	start := 0
+	for start < len(lines) && strings.TrimSpace(lines[start]) == "" {
+		start++
+	}
+
+	// Trim empty lines from end
+	end := len(lines) - 1
+	for end >= start && strings.TrimSpace(lines[end]) == "" {
+		end--
+	}
+
+	if start <= end {
+		return strings.Join(lines[start:end+1], "\n")
+	}
+	return ""
 }
 
 // func showResourceDoc(docsDir, resourceName string, isDataSource bool) int {
