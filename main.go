@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"github.com/hashicorp/terraform-svchost/disco"
 	"github.com/hashicorp/terraform/internal/addrs"
+	"github.com/hashicorp/terraform/internal/command"
 	"github.com/hashicorp/terraform/internal/command/cliconfig"
 	"github.com/hashicorp/terraform/internal/command/format"
 	"github.com/hashicorp/terraform/internal/didyoumean"
@@ -249,6 +250,14 @@ func realMain() int {
 		initCommands(ctx, originalWd, streams, config, services, providerSrc, providerDevOverrides, unmanagedProviders)
 	}
 
+	// Initialize history hooks for command tracking
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Printf("[WARN] Failed to get working directory for history tracking: %s", err)
+		wd = "."
+	}
+	historyHooks := command.NewHistoryHooks(wd)
+
 	// Run checkpoint
 	go runCheckpoint(ctx, config)
 
@@ -336,10 +345,42 @@ func realMain() int {
 		}
 	}
 
+	// Start history recording before command execution
+	commandName := cliRunner.Subcommand()
+	if commandName != "" {
+		// Extract command arguments (everything after the command name)
+		commandArgs := args
+		if len(args) > 0 {
+			// Find where the command name appears in args and take everything after
+			for i, arg := range args {
+				if arg == commandName || strings.HasPrefix(commandName, arg) {
+					if i+1 < len(args) {
+						commandArgs = args[i+1:]
+					} else {
+						commandArgs = []string{}
+					}
+					break
+				}
+			}
+		}
+
+		if err := historyHooks.BeforeCommand(commandName, commandArgs); err != nil {
+			log.Printf("[WARN] Failed to start history recording: %s", err)
+		}
+	}
+
 	exitCode, err := cliRunner.Run()
 	if err != nil {
 		Ui.Error(fmt.Sprintf("Error executing CLI: %s", err.Error()))
-		return 1
+		historyHooks.OnError(err)
+		exitCode = 1
+	}
+
+	// Finish history recording after command execution
+	if commandName != "" {
+		if err := historyHooks.AfterCommand(exitCode); err != nil {
+			log.Printf("[WARN] Failed to finish history recording: %s", err)
+		}
 	}
 
 	// if we are exiting with a non-zero code, check if it was caused by any
