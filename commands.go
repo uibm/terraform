@@ -62,6 +62,7 @@ func initCommands(
 	providerSrc getproviders.Source,
 	providerDevOverrides map[addrs.Provider]getproviders.PackageLocalDir,
 	unmanagedProviders map[addrs.Provider]*plugin.ReattachConfig,
+	historyHooks *command.HistoryHooks,
 ) {
 	var inAutomation bool
 	if v := os.Getenv(runningInAutomationEnvName); v != "" {
@@ -111,6 +112,8 @@ func initCommands(
 		UnmanagedProviders:   unmanagedProviders,
 
 		AllowExperimentalFeatures: ExperimentsAllowed(),
+
+		HistoryHooks: historyHooks,
 	}
 
 	// The command list is included in the terraform -help

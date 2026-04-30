@@ -241,22 +241,22 @@ func realMain() int {
 		}
 	}
 
-	// In tests, Commands may already be set to provide mock commands
-	if Commands == nil {
-		// Commands get to hold on to the original working directory here,
-		// in case they need to refer back to it for any special reason, though
-		// they should primarily be working with the override working directory
-		// that we've now switched to above.
-		initCommands(ctx, originalWd, streams, config, services, providerSrc, providerDevOverrides, unmanagedProviders)
-	}
-
-	// Initialize history hooks for command tracking
+	// Initialize history hooks for command tracking before initializing commands
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Printf("[WARN] Failed to get working directory for history tracking: %s", err)
 		wd = "."
 	}
 	historyHooks := command.NewHistoryHooks(wd)
+
+	// In tests, Commands may already be set to provide mock commands
+	if Commands == nil {
+		// Commands get to hold on to the original working directory here,
+		// in case they need to refer back to it for any special reason, though
+		// they should primarily be working with the override working directory
+		// that we've now switched to above.
+		initCommands(ctx, originalWd, streams, config, services, providerSrc, providerDevOverrides, unmanagedProviders, historyHooks)
+	}
 
 	// Run checkpoint
 	go runCheckpoint(ctx, config)
