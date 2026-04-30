@@ -4,15 +4,22 @@
 
 ## Branches Renamed
 
-### 1. terraform-scan → upstream-merge-2024
-**Reason:** This branch only contains upstream merge commits with no custom features. The new name clearly indicates it's an upstream merge from 2024.
+### 1. terraform-scan → feature/s3-backend-improvements
+**Reason:** This branch contains S3 backend improvements including Object Lock support, compliance tests, and lock file management enhancements.
+
+**Key features:**
+- S3 Object Lock support (compliance and governance modes)
+- Lock file management improvements using s3manager
+- Environment variable parsing fixes
+- Template file unmarking for TypeFunc
 
 **Original commits:**
-- Merge pull request #36120 from bschaatsbergen/b/s3-object-lock-file
-- Update tfdeploy.mdx (#36143)
-- Various upstream merge commits
+- s3: add tests for Amazon S3 Object Lock
+- s3: use the s3manager to write the lock file
+- s3: add mix of compliance and governance tests
+- Docs: Added necessary permission for `use_lockfile` at s3 backend
 
-**New name reflects:** Pure upstream synchronization branch
+**New name reflects:** S3 backend feature improvements
 
 ---
 
@@ -71,20 +78,19 @@
 All branches now follow this convention:
 - **feature/[feature-name]**: Feature development branches
 - **[descriptive-name]**: Descriptive names for special purpose branches
-- **upstream-merge-[year]**: Upstream synchronization branches
 
 ## Command to View All Branches
 
 ```bash
-git branch -a | grep -E "(feature|upstream|terraform-docs|history)"
+git branch -a | grep -E "(feature|terraform-docs|history)"
 ```
 
 ## Current Branch Structure
 
 ```
-* history-support                  (current - history command feature)
-  feature/docs-command-v6          (docs command on older base)
-  feature/docs-command-v7          (docs command on newer base)
-  terraform-docs-support           (primary docs command branch)
-  upstream-merge-2024              (upstream sync only)
-  main                             (base branch)
+* history-support                     (current - history command feature)
+  feature/docs-command-v6             (docs command on older base)
+  feature/docs-command-v7             (docs command on newer base)
+  feature/s3-backend-improvements     (S3 backend enhancements)
+  terraform-docs-support              (primary docs command branch)
+  main                                (base branch)
