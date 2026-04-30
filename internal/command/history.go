@@ -93,31 +93,37 @@ func (c *HistoryCommand) runList(args []string) int {
 		return 1
 	}
 
-	// Confirm if not forced
-	if !force {
-		if all {
-			c.Ui.Output("This will delete ALL history entries.")
-		} else {
-			c.Ui.Output(fmt.Sprintf("This will delete entries older than %s.", olderThan))
-		}
-		c.Ui.Output("Are you sure? (yes/no)")
-
-		var response string
-		fmt.Scanln(&response)
-		if strings.ToLower(response) != "yes" {
-			c.Ui.Output("Cancelled.")
-			return 0
-		}
-	}
-
-	// Load and clean history
-	if err := c.cleanHistory(workingDir, olderThan, workspace, all); err != nil {
-		c.Ui.Error(fmt.Sprintf("Error cleaning history: %s", err))
+	// Load history
+	entries, err := c.loadHistoryEntries(workingDir)
+	if err != nil {
+		c.Ui.Error(fmt.Sprintf("Error loading history: %s", err))
 		return 1
 	}
 
-	c.Ui.Output("History cleaned successfully.")
-	return 0
+	// Apply filters
+	filteredEntries := c.filterEntries(entries, filterOptions{
+		command:    commandFilter,
+		workspace:  workspaceFilter,
+		since:      since,
+		until:      until,
+		exitCode:   exitCode,
+		showErrors: showErrors,
+	})
+
+	// Apply limit
+	if limit > 0 && len(filteredEntries) > limit {
+		filteredEntries = filteredEntries[:limit]
+	}
+
+	// Output results
+	switch output {
+	case "json":
+		return c.outputJSON(filteredEntries)
+	case "csv":
+		return c.outputCSV(filteredEntries)
+	default:
+		return c.outputTable(filteredEntries)
+	}
 }
 
 // runEnable implements the "enable" subcommand
@@ -598,12 +604,18 @@ func (c *HistoryCommand) cleanHistory(workingDir, olderThan, workspace string, a
 	}
 
 	// Save cleaned history
+	manager := history.NewManager(workingDir)
 	historyFile := &history.HistoryFile{
 		Version:   "1.0",
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
-		Config:    *history.NewManager(workingDir).Config,
-		Entries:   entries,
+		Config: history.Config{
+			Enabled:          manager.IsEnabled(),
+			MaxEntries:       history.DefaultMaxEntries,
+			RetentionDays:    history.DefaultRetentionDays,
+			IncludeSensitive: false,
+		},
+		Entries: entries,
 	}
 
 	data, err := json.MarshalIndent(historyFile, "", "  ")
@@ -626,8 +638,13 @@ func (c *HistoryCommand) saveHistoryConfig(workingDir string, manager *history.M
 			Version:   "1.0",
 			CreatedAt: time.Now().UTC(),
 			UpdatedAt: time.Now().UTC(),
-			Config:    *manager.Config,
-			Entries:   []history.Entry{},
+			Config: history.Config{
+				Enabled:          manager.IsEnabled(),
+				MaxEntries:       history.DefaultMaxEntries,
+				RetentionDays:    history.DefaultRetentionDays,
+				IncludeSensitive: false,
+			},
+			Entries: []history.Entry{},
 		}
 	} else {
 		entries, err := c.loadHistoryEntries(workingDir)
@@ -639,8 +656,13 @@ func (c *HistoryCommand) saveHistoryConfig(workingDir string, manager *history.M
 			Version:   "1.0",
 			CreatedAt: time.Now().UTC(),
 			UpdatedAt: time.Now().UTC(),
-			Config:    *manager.Config,
-			Entries:   entries,
+			Config: history.Config{
+				Enabled:          manager.IsEnabled(),
+				MaxEntries:       history.DefaultMaxEntries,
+				RetentionDays:    history.DefaultRetentionDays,
+				IncludeSensitive: false,
+			},
+			Entries: entries,
 		}
 	}
 
@@ -910,28 +932,25 @@ func (c *HistoryCommand) runClean(args []string) int {
 		return 1
 	}
 
-	// Apply filters
-	filteredEntries := c.filterEntries(entries, filterOptions{
-		command:    commandFilter,
-		workspace:  workspaceFilter,
-		since:      since,
-		until:      until,
-		exitCode:   exitCode,
-		showErrors: showErrors,
-	})
+	// Confirm if not forced
+	if !force {
+		c.Ui.Output(fmt.Sprintf("This will remove %d history entries.", len(entries)))
+		c.Ui.Output("Are you sure? (yes/no)")
 
-	// Apply limit
-	if limit > 0 && len(filteredEntries) > limit {
-		filteredEntries = filteredEntries[:limit]
+		var response string
+		fmt.Scanln(&response)
+		if response != "yes" {
+			c.Ui.Output("Clean cancelled.")
+			return 0
+		}
 	}
 
-	// Output results
-	switch output {
-	case "json":
-		return c.outputJSON(filteredEntries)
-	case "csv":
-		return c.outputCSV(filteredEntries)
-	default:
-		return c.outputTable(filteredEntries)
+	// Clean history
+	if err := c.cleanHistory(workingDir, olderThan, workspace, all); err != nil {
+		c.Ui.Error(fmt.Sprintf("Error cleaning history: %s", err))
+		return 1
 	}
+
+	c.Ui.Output("History cleaned successfully.")
+	return 0
 }

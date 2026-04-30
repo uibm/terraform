@@ -30,3 +30,15 @@ coverage.txt
 
 # IDEs
 .vscode/
+
+# Terraform history files
+terraform.history
+terraform.history.lock
+
+# Log files
+*.log
+crash.log
+
+# Test directories
+test/
+mydocs/

@@ -436,6 +436,12 @@ func initCommands(
 				},
 			}, nil
 		},
+
+		"history": func() (cli.Command, error) {
+			return &command.HistoryCommand{
+				Meta: meta,
+			}, nil
+		},
 	}
 
 	if meta.AllowExperimentalFeatures {
