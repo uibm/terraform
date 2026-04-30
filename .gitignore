@@ -27,4 +27,16 @@ vendor/
 
 # Coverage
 coverage.txt
-/.terraform/docs
+
+# Terraform runtime files
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+
+# Log files
+*.log
+
+# Test directories
+test/
+mydocs/

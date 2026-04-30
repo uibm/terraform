@@ -468,47 +468,6 @@ func cleanSection(section string) string {
 	return ""
 }
 
-// func showResourceDoc(docsDir, resourceName string, isDataSource bool) int {
-// 	var docPath string
-// 	if isDataSource {
-// 		docPath = filepath.Join(docsDir, "docs", "data-sources", resourceName+".md")
-// 	} else {
-// 		docPath = filepath.Join(docsDir, "docs", "resources", resourceName+".md")
-// 	}
-
-// 	content, err := os.ReadFile(docPath)
-// 	if err != nil {
-// 		fmt.Printf("Documentation not found for %s: %s\n",
-// 			resourceName, err)
-// 		return 1
-// 	}
-
-// 	fmt.Println(string(content))
-// 	return 0
-// }
-
-// func showResourceDoc(docsDir, resourceName string) int {
-// 	paths := []string{
-// 		filepath.Join(docsDir, "docs", "resources", resourceName+".md"),
-// 		filepath.Join(docsDir, "docs", "data-sources", resourceName+".md"),
-// 		filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.md"),
-// 		filepath.Join(docsDir, "website", "docs", "d", resourceName+".html.md"),
-// 		filepath.Join(docsDir, "website", "docs", "r", resourceName+".html.markdown"),
-// 		filepath.Join(docsDir, "website", "docs", "d", resourceName+".html.markdown"),
-// 	}
-
-// 	for _, path := range paths {
-// 		content, err := os.ReadFile(path)
-// 		if err == nil {
-// 			fmt.Println(string(content))
-// 			return 0
-// 		}
-// 	}
-
-// 	fmt.Printf("Documentation not found for resource: %s\n", resourceName)
-// 	return 1
-// }
-
 func isDocumentationFile(filename string) bool {
 	ext := strings.ToLower(filepath.Ext(filename))
 	return ext == ".md" || ext == ".markdown" ||
