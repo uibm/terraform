@@ -161,6 +161,10 @@ type Meta struct {
 	// just trusting that someone else did it before running Terraform.
 	UnmanagedProviders map[addrs.Provider]*plugin.ReattachConfig
 
+	// HistoryHooks provides hooks for tracking command execution history.
+	// This is used to automatically record terraform commands and their results.
+	HistoryHooks *HistoryHooks
+
 	// AllowExperimentalFeatures controls whether a command that embeds this
 	// Meta is permitted to make use of experimental Terraform features.
 	//
