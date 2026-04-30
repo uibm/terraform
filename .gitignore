@@ -28,3 +28,25 @@ vendor/
 # Coverage
 coverage.txt
 /.terraform/docs
+
+# Terraform state files
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+
+# Terraform directory
+.terraform/
+.terraform.lock.hcl
+
+# Terraform log files
+*.log
+terraform.log
+terraform_*.log
+
+# Test directories
+test/
+tests/
+
+# Documentation output
+mydocs/
+docs_output/
